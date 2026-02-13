@@ -22,6 +22,9 @@ import google.generativeai as genai
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Configure Gemini AI
+genai.configure(api_key=os.environ.get('GOOGLE_API_KEY'))
+
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
