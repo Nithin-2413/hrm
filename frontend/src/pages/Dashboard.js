@@ -184,6 +184,7 @@ const Dashboard = () => {
                   data-testid="action-create-jd-button"
                   variant="outline"
                   className="h-auto py-6 flex-col items-start text-left hover:border-primary transition-colors"
+                  onClick={() => navigate('/jobs')}
                 >
                   <FileText className="h-6 w-6 mb-2 text-primary" />
                   <div>
