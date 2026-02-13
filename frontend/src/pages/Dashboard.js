@@ -202,6 +202,7 @@ const Dashboard = () => {
                   data-testid="action-upload-resume-button"
                   variant="outline"
                   className="h-auto py-6 flex-col items-start text-left hover:border-primary transition-colors"
+                  onClick={() => navigate('/screening')}
                 >
                   <Upload className="h-6 w-6 mb-2 text-primary" />
                   <div>
@@ -214,6 +215,7 @@ const Dashboard = () => {
                   data-testid="action-view-history-button"
                   variant="outline"
                   className="h-auto py-6 flex-col items-start text-left hover:border-primary transition-colors"
+                  onClick={() => navigate('/history')}
                 >
                   <History className="h-6 w-6 mb-2 text-primary" />
                   <div>
