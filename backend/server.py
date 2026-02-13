@@ -12,6 +12,12 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import requests
 from urllib.parse import urlencode, unquote
+import base64
+import io
+import re
+import PyPDF2
+import docx
+import google.generativeai as genai
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
