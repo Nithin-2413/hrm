@@ -3,10 +3,16 @@ import { ArrowRight, Sparkles, Brain, CheckCircle2, Zap, Calendar, FileText, Tre
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const LandingPage = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { scrollYProgress } = useScroll();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -18,6 +24,22 @@ const LandingPage = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  // Check if user is already authenticated and redirect to dashboard
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        await axios.get(`${API}/auth/me`, {
+          withCredentials: true
+        });
+        // User is authenticated, redirect to dashboard
+        navigate('/dashboard', { replace: true });
+      } catch (error) {
+        // User is not authenticated, stay on landing page
+      }
+    };
+    checkAuth();
+  }, [navigate]);
 
   const handleLogin = () => {
     const redirectUrl = window.location.origin + '/dashboard';
