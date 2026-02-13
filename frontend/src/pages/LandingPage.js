@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles, Zap, Target, Brain, Users, TrendingUp, CheckCircle2, Star } from 'lucide-react';
+import { ArrowRight, Sparkles, Zap, Target, Brain, Users, TrendingUp, CheckCircle2, Star, Upload } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { motion, useScroll, useTransform } from 'framer-motion';
