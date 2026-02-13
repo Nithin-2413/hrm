@@ -23,9 +23,17 @@ const Dashboard = () => {
   const location = useLocation();
   const [user, setUser] = useState(location.state?.user || null);
   const [isAuthenticated, setIsAuthenticated] = useState(location.state?.user ? true : null);
+  const [stats, setStats] = useState({
+    activeJobs: 0,
+    totalResumes: 0,
+    scheduledInterviews: 0
+  });
 
   useEffect(() => {
-    if (location.state?.user) return;
+    if (location.state?.user) {
+      loadStats();
+      return;
+    }
 
     const checkAuth = async () => {
       try {
@@ -34,6 +42,7 @@ const Dashboard = () => {
         });
         setUser(response.data);
         setIsAuthenticated(true);
+        loadStats();
       } catch (error) {
         setIsAuthenticated(false);
         navigate('/login');
@@ -42,6 +51,20 @@ const Dashboard = () => {
 
     checkAuth();
   }, [location.state, navigate]);
+
+  const loadStats = async () => {
+    try {
+      const jobsResponse = await axios.get(`${API}/jobs?status=active`, {
+        withCredentials: true
+      });
+      setStats(prev => ({
+        ...prev,
+        activeJobs: jobsResponse.data.length
+      }));
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+    }
+  };
 
   const handleLogout = async () => {
     try {
