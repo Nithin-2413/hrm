@@ -215,6 +215,122 @@ async def logout(request: Request, response: Response):
     
     return {"message": "Logged out successfully"}
 
+# Job Description Endpoints
+
+@api_router.post("/jobs")
+async def create_job(job_data: JobDescriptionCreate, request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    job_id = f"job_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    
+    job_doc = {
+        "job_id": job_id,
+        "user_id": user.user_id,
+        "title": job_data.title,
+        "department": job_data.department,
+        "location": job_data.location,
+        "employment_type": job_data.employment_type,
+        "experience_level": job_data.experience_level,
+        "description": job_data.description,
+        "requirements": job_data.requirements,
+        "nice_to_have": job_data.nice_to_have,
+        "salary_range": job_data.salary_range.dict() if job_data.salary_range else None,
+        "status": job_data.status,
+        "created_at": now,
+        "updated_at": now
+    }
+    
+    await db.jobs.insert_one(job_doc)
+    
+    created_job = await db.jobs.find_one(
+        {"job_id": job_id},
+        {"_id": 0}
+    )
+    
+    return created_job
+
+@api_router.get("/jobs")
+async def list_jobs(request: Request, status: Optional[str] = None):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    query = {"user_id": user.user_id}
+    if status:
+        query["status"] = status
+    
+    jobs = await db.jobs.find(query, {"_id": 0}).sort("created_at", -1).to_list(length=None)
+    
+    return jobs
+
+@api_router.get("/jobs/{job_id}")
+async def get_job(job_id: str, request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    job = await db.jobs.find_one(
+        {"job_id": job_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    return job
+
+@api_router.put("/jobs/{job_id}")
+async def update_job(job_id: str, job_data: JobDescriptionUpdate, request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    job = await db.jobs.find_one(
+        {"job_id": job_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    update_data = {k: v for k, v in job_data.dict(exclude_unset=True).items() if v is not None}
+    
+    if update_data:
+        if "salary_range" in update_data and update_data["salary_range"]:
+            update_data["salary_range"] = update_data["salary_range"]
+        
+        update_data["updated_at"] = datetime.now(timezone.utc)
+        
+        await db.jobs.update_one(
+            {"job_id": job_id},
+            {"$set": update_data}
+        )
+    
+    updated_job = await db.jobs.find_one(
+        {"job_id": job_id},
+        {"_id": 0}
+    )
+    
+    return updated_job
+
+@api_router.delete("/jobs/{job_id}")
+async def delete_job(job_id: str, request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    result = await db.jobs.delete_one(
+        {"job_id": job_id, "user_id": user.user_id}
+    )
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    return {"message": "Job deleted successfully"}
+
 app.include_router(api_router)
 
 app.add_middleware(
