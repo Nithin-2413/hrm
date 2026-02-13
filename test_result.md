@@ -284,9 +284,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Job Description CRUD APIs"
-    - "Jobs List Page"
-    - "Job Form Dialog (Create/Edit)"
+    - "Resume Upload & Text Extraction"
+    - "AI Resume Screening with Gemini"
+    - "Screening History APIs"
+    - "Resume Upload with Batch Support"
+    - "AI Resume Screening Interface"
+    - "Screening History & Results Display"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
