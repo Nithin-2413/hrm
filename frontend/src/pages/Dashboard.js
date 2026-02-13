@@ -58,9 +58,13 @@ const Dashboard = () => {
       const jobsResponse = await axios.get(`${API}/jobs?status=active`, {
         withCredentials: true
       });
+      const screeningsResponse = await axios.get(`${API}/screenings`, {
+        withCredentials: true
+      });
       setStats(prev => ({
         ...prev,
-        activeJobs: jobsResponse.data.length
+        activeJobs: jobsResponse.data.length,
+        totalScreenings: screeningsResponse.data.length
       }));
     } catch (error) {
       console.error('Failed to load stats:', error);
