@@ -11,7 +11,7 @@ from datetime import datetime
 import sys
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://recruit-ai-28.preview.emergentagent.com"
+BACKEND_URL = "https://hire-genius-51.preview.emergentagent.com"
 API_BASE = f"{BACKEND_URL}/api"
 
 class JobAPITester:
