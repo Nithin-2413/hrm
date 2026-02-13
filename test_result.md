@@ -565,3 +565,43 @@ agent_communication:
       1. Investigate external URL routing issue 
       2. Test frontend integration with local backend if needed
       3. Proceed with Phase 4 planning - backend infrastructure is solid
+
+  - agent: "main"
+    message: |
+      🔧 CRITICAL BUG FIX - AUTH LOOP ISSUE RESOLVED
+      
+      Issue Reported by User:
+      "After authentication, it's redirecting to hero page again asking to authenticate - infinite loop"
+      
+      Root Cause:
+      LandingPage component did not check if user was already authenticated. When Dashboard's
+      /auth/me check failed or when an authenticated user visited "/", they would see the
+      landing page with login buttons, creating a confusing loop.
+      
+      Fix Applied:
+      - Added useEffect hook in LandingPage.js to check authentication status on mount
+      - If user is authenticated (via /api/auth/me), automatically redirect to /dashboard
+      - Used { replace: true } to prevent back button loop
+      - Imported necessary dependencies: useNavigate, axios
+      
+      Code Changes:
+      File: /app/frontend/src/pages/LandingPage.js
+      - Added axios and useNavigate imports
+      - Added BACKEND_URL and API constants
+      - Added auth check useEffect that:
+        * Calls GET /api/auth/me with credentials
+        * On success: redirects to /dashboard (user is logged in)
+        * On error: stays on landing page (user needs to log in)
+      
+      Result:
+      ✅ Authenticated users visiting "/" are now auto-redirected to dashboard
+      ✅ No more authentication loop
+      ✅ Clean UX flow: Login → Dashboard → No loop back to landing
+      
+      Services Status:
+      - Backend: RUNNING (port 8001)
+      - Frontend: RUNNING (port 3000)
+      - MongoDB: RUNNING
+      - All dependencies installed
+      
+      READY FOR PHASE 4 IMPLEMENTATION
