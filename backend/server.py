@@ -738,6 +738,233 @@ async def get_screening(screening_id: str, request: Request):
     
     return screening
 
+@api_router.put("/screenings/{screening_id}/status")
+async def update_screening_status(screening_id: str, status_update: StatusUpdate, request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Validate status
+    valid_statuses = ["new", "shortlisted", "interviewed", "hired", "rejected"]
+    if status_update.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}")
+    
+    screening = await db.screenings.find_one(
+        {"screening_id": screening_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not screening:
+        raise HTTPException(status_code=404, detail="Screening not found")
+    
+    now = datetime.now(timezone.utc)
+    status_history = screening.get("status_history", [])
+    status_history.append({
+        "status": status_update.status,
+        "changed_at": now,
+        "changed_by": user.user_id
+    })
+    
+    await db.screenings.update_one(
+        {"screening_id": screening_id},
+        {
+            "$set": {
+                "status": status_update.status,
+                "status_history": status_history,
+                "updated_at": now
+            }
+        }
+    )
+    
+    return {"message": "Status updated successfully", "status": status_update.status}
+
+@api_router.post("/screenings/bulk-update-status")
+async def bulk_update_status(request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    body = await request.json()
+    screening_ids = body.get("screening_ids", [])
+    new_status = body.get("status")
+    
+    if not screening_ids or not new_status:
+        raise HTTPException(status_code=400, detail="screening_ids and status are required")
+    
+    valid_statuses = ["new", "shortlisted", "interviewed", "hired", "rejected"]
+    if new_status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}")
+    
+    now = datetime.now(timezone.utc)
+    updated_count = 0
+    
+    for screening_id in screening_ids:
+        screening = await db.screenings.find_one(
+            {"screening_id": screening_id, "user_id": user.user_id}
+        )
+        if screening:
+            status_history = screening.get("status_history", [])
+            status_history.append({
+                "status": new_status,
+                "changed_at": now,
+                "changed_by": user.user_id
+            })
+            
+            await db.screenings.update_one(
+                {"screening_id": screening_id},
+                {
+                    "$set": {
+                        "status": new_status,
+                        "status_history": status_history,
+                        "updated_at": now
+                    }
+                }
+            )
+            updated_count += 1
+    
+    return {"message": f"Updated {updated_count} screening(s)", "count": updated_count}
+
+@api_router.get("/screenings/export/csv")
+async def export_screenings_csv(request: Request, job_id: Optional[str] = None, status: Optional[str] = None):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    query = {"user_id": user.user_id}
+    if job_id:
+        query["job_id"] = job_id
+    if status:
+        query["status"] = status
+    
+    screenings = await db.screenings.find(query, {"_id": 0}).sort("created_at", -1).to_list(length=None)
+    
+    # Build CSV content
+    import csv
+    import io
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow([
+        "Screening ID", "Candidate Name", "Job ID", "Match Score", "Experience Score",
+        "Skills Score", "Keyword Score", "Recommended Action", "Status", "Summary",
+        "Strengths", "Gaps", "Key Highlights", "Created At"
+    ])
+    
+    # Rows
+    for screening in screenings:
+        writer.writerow([
+            screening.get('screening_id', ''),
+            screening.get('candidate_name', 'N/A'),
+            screening.get('job_id', ''),
+            screening.get('match_score', 0),
+            screening.get('experience_score', 0),
+            screening.get('skills_score', 0),
+            screening.get('keyword_score', 0),
+            screening.get('recommended_action', ''),
+            screening.get('status', 'new'),
+            screening.get('summary', ''),
+            '; '.join(screening.get('strengths', [])),
+            '; '.join(screening.get('gaps', [])),
+            '; '.join(screening.get('key_highlights', [])),
+            screening.get('created_at', '').isoformat() if screening.get('created_at') else ''
+        ])
+    
+    from fastapi.responses import StreamingResponse
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=screening_results.csv"}
+    )
+
+@api_router.get("/analytics/dashboard")
+async def get_dashboard_analytics(request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Get all screenings
+    all_screenings = await db.screenings.find(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    ).to_list(length=None)
+    
+    # Status breakdown
+    status_counts = {
+        "new": 0,
+        "shortlisted": 0,
+        "interviewed": 0,
+        "hired": 0,
+        "rejected": 0
+    }
+    
+    for screening in all_screenings:
+        status = screening.get('status', 'new')
+        if status in status_counts:
+            status_counts[status] += 1
+    
+    # Calculate average scores
+    total_match_score = 0
+    total_experience_score = 0
+    total_skills_score = 0
+    total_keyword_score = 0
+    count = len(all_screenings)
+    
+    for screening in all_screenings:
+        total_match_score += screening.get('match_score', 0)
+        total_experience_score += screening.get('experience_score', 0)
+        total_skills_score += screening.get('skills_score', 0)
+        total_keyword_score += screening.get('keyword_score', 0)
+    
+    avg_scores = {
+        "match_score": round(total_match_score / count, 1) if count > 0 else 0,
+        "experience_score": round(total_experience_score / count, 1) if count > 0 else 0,
+        "skills_score": round(total_skills_score / count, 1) if count > 0 else 0,
+        "keyword_score": round(total_keyword_score / count, 1) if count > 0 else 0
+    }
+    
+    # Get top performing jobs (by average match score)
+    job_scores = {}
+    for screening in all_screenings:
+        job_id = screening.get('job_id')
+        if job_id:
+            if job_id not in job_scores:
+                job_scores[job_id] = {"total": 0, "count": 0}
+            job_scores[job_id]["total"] += screening.get('match_score', 0)
+            job_scores[job_id]["count"] += 1
+    
+    top_jobs = []
+    for job_id, data in job_scores.items():
+        avg_score = data["total"] / data["count"]
+        job = await db.jobs.find_one(
+            {"job_id": job_id},
+            {"_id": 0, "title": 1}
+        )
+        if job:
+            top_jobs.append({
+                "job_id": job_id,
+                "job_title": job.get('title', 'Unknown'),
+                "avg_match_score": round(avg_score, 1),
+                "candidate_count": data["count"]
+            })
+    
+    top_jobs.sort(key=lambda x: x["avg_match_score"], reverse=True)
+    top_jobs = top_jobs[:5]  # Top 5 jobs
+    
+    # Calculate conversion rate (hired / total)
+    conversion_rate = round((status_counts["hired"] / count * 100), 1) if count > 0 else 0
+    
+    return {
+        "total_screenings": count,
+        "status_breakdown": status_counts,
+        "average_scores": avg_scores,
+        "top_jobs": top_jobs,
+        "conversion_rate": conversion_rate
+    }
+
+
 @api_router.get("/resumes")
 async def list_resumes(request: Request):
     user = await get_user_from_cookie(request)
