@@ -1,0 +1,552 @@
+#!/usr/bin/env python3
+"""
+Backend API Testing for Recruit-AI Job Description Management
+Tests all CRUD operations for job descriptions with authentication
+"""
+
+import requests
+import json
+import uuid
+from datetime import datetime
+import sys
+
+# Get backend URL from frontend .env
+BACKEND_URL = "https://recruit-ai-28.preview.emergentagent.com"
+API_BASE = f"{BACKEND_URL}/api"
+
+class JobAPITester:
+    def __init__(self):
+        self.session_token = None
+        self.user_data = None
+        self.test_jobs = []
+        self.session = requests.Session()
+        
+    def log(self, message, level="INFO"):
+        """Log test messages with timestamp"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"[{timestamp}] {level}: {message}")
+        
+    def create_test_session(self):
+        """Create a test user session for authentication"""
+        self.log("Creating test user session...")
+        
+        # Mock session data for testing (simulating Emergent OAuth)
+        test_session_id = f"test_session_{uuid.uuid4().hex[:8]}"
+        
+        try:
+            # Try to create session with mock data
+            response = self.session.post(f"{API_BASE}/auth/session", 
+                json={"session_id": test_session_id},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.session_token = data.get("session_token")
+                self.user_data = data.get("user")
+                self.log(f"✅ Session created successfully for user: {self.user_data.get('email', 'Unknown')}")
+                return True
+            else:
+                self.log(f"❌ Failed to create session: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Session creation error: {str(e)}", "ERROR")
+            return False
+    
+    def get_auth_headers(self):
+        """Get authentication headers for API calls"""
+        if not self.session_token:
+            return {}
+        return {"Authorization": f"Bearer {self.session_token}"}
+    
+    def test_auth_protection(self):
+        """Test that endpoints are properly protected"""
+        self.log("\n=== Testing Authentication Protection ===")
+        
+        endpoints_to_test = [
+            ("GET", f"{API_BASE}/jobs"),
+            ("POST", f"{API_BASE}/jobs"),
+            ("GET", f"{API_BASE}/jobs/test_id"),
+            ("PUT", f"{API_BASE}/jobs/test_id"),
+            ("DELETE", f"{API_BASE}/jobs/test_id")
+        ]
+        
+        auth_protected = True
+        
+        for method, url in endpoints_to_test:
+            try:
+                if method == "GET":
+                    response = requests.get(url, timeout=10)
+                elif method == "POST":
+                    response = requests.post(url, json={}, timeout=10)
+                elif method == "PUT":
+                    response = requests.put(url, json={}, timeout=10)
+                elif method == "DELETE":
+                    response = requests.delete(url, timeout=10)
+                
+                if response.status_code == 401:
+                    self.log(f"✅ {method} {url.split('/')[-1]} properly protected (401)")
+                else:
+                    self.log(f"❌ {method} {url.split('/')[-1]} not protected (got {response.status_code})", "ERROR")
+                    auth_protected = False
+                    
+            except Exception as e:
+                self.log(f"❌ Error testing {method} {url}: {str(e)}", "ERROR")
+                auth_protected = False
+        
+        return auth_protected
+    
+    def test_create_job(self):
+        """Test job creation with various scenarios"""
+        self.log("\n=== Testing Job Creation ===")
+        
+        if not self.session_token:
+            self.log("❌ No session token available", "ERROR")
+            return False
+        
+        # Test 1: Create minimal job (only required fields)
+        minimal_job = {
+            "title": "Senior Software Engineer",
+            "description": "We are looking for a senior software engineer to join our team."
+        }
+        
+        try:
+            response = self.session.post(
+                f"{API_BASE}/jobs",
+                json=minimal_job,
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                job_data = response.json()
+                self.test_jobs.append(job_data)
+                self.log(f"✅ Minimal job created: {job_data.get('job_id')}")
+            else:
+                self.log(f"❌ Failed to create minimal job: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Error creating minimal job: {str(e)}", "ERROR")
+            return False
+        
+        # Test 2: Create complete job with all fields
+        complete_job = {
+            "title": "Full Stack Developer",
+            "department": "Engineering",
+            "location": "San Francisco, CA",
+            "employment_type": "Full-time",
+            "experience_level": "Senior",
+            "description": "Join our engineering team to build amazing products using modern technologies.",
+            "requirements": [
+                "5+ years of experience in web development",
+                "Proficiency in React and Node.js",
+                "Experience with databases (MongoDB, PostgreSQL)"
+            ],
+            "nice_to_have": [
+                "Experience with Docker and Kubernetes",
+                "Knowledge of AI/ML technologies",
+                "Open source contributions"
+            ],
+            "salary_range": {
+                "min": 120000,
+                "max": 180000,
+                "currency": "USD"
+            },
+            "status": "active"
+        }
+        
+        try:
+            response = self.session.post(
+                f"{API_BASE}/jobs",
+                json=complete_job,
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                job_data = response.json()
+                self.test_jobs.append(job_data)
+                self.log(f"✅ Complete job created: {job_data.get('job_id')}")
+                
+                # Verify all fields are saved correctly
+                if (job_data.get('salary_range') and 
+                    job_data['salary_range'].get('min') == 120000 and
+                    len(job_data.get('requirements', [])) == 3):
+                    self.log("✅ All job fields saved correctly")
+                else:
+                    self.log("❌ Some job fields not saved correctly", "ERROR")
+                    
+            else:
+                self.log(f"❌ Failed to create complete job: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Error creating complete job: {str(e)}", "ERROR")
+            return False
+        
+        # Test 3: Create job with different statuses
+        for status in ["draft", "paused", "closed"]:
+            status_job = {
+                "title": f"Test Job - {status.title()}",
+                "description": f"Test job with {status} status",
+                "status": status
+            }
+            
+            try:
+                response = self.session.post(
+                    f"{API_BASE}/jobs",
+                    json=status_job,
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    job_data = response.json()
+                    self.test_jobs.append(job_data)
+                    self.log(f"✅ Job with {status} status created: {job_data.get('job_id')}")
+                else:
+                    self.log(f"❌ Failed to create {status} job: {response.status_code}", "ERROR")
+                    
+            except Exception as e:
+                self.log(f"❌ Error creating {status} job: {str(e)}", "ERROR")
+        
+        return True
+    
+    def test_list_jobs(self):
+        """Test job listing with filters"""
+        self.log("\n=== Testing Job Listing ===")
+        
+        if not self.session_token:
+            self.log("❌ No session token available", "ERROR")
+            return False
+        
+        # Test 1: List all jobs
+        try:
+            response = self.session.get(
+                f"{API_BASE}/jobs",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                jobs = response.json()
+                self.log(f"✅ Listed all jobs: {len(jobs)} jobs found")
+                
+                if len(jobs) >= len(self.test_jobs):
+                    self.log("✅ Job count matches expected")
+                else:
+                    self.log(f"❌ Expected at least {len(self.test_jobs)} jobs, got {len(jobs)}", "ERROR")
+                    
+            else:
+                self.log(f"❌ Failed to list jobs: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Error listing jobs: {str(e)}", "ERROR")
+            return False
+        
+        # Test 2: Filter by status
+        for status in ["active", "draft", "paused", "closed"]:
+            try:
+                response = self.session.get(
+                    f"{API_BASE}/jobs?status={status}",
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    filtered_jobs = response.json()
+                    self.log(f"✅ Filtered by {status}: {len(filtered_jobs)} jobs")
+                    
+                    # Verify all returned jobs have the correct status
+                    if all(job.get('status') == status for job in filtered_jobs):
+                        self.log(f"✅ All {status} jobs have correct status")
+                    else:
+                        self.log(f"❌ Some {status} jobs have incorrect status", "ERROR")
+                        
+                else:
+                    self.log(f"❌ Failed to filter by {status}: {response.status_code}", "ERROR")
+                    
+            except Exception as e:
+                self.log(f"❌ Error filtering by {status}: {str(e)}", "ERROR")
+        
+        return True
+    
+    def test_get_single_job(self):
+        """Test getting single job by ID"""
+        self.log("\n=== Testing Single Job Retrieval ===")
+        
+        if not self.session_token or not self.test_jobs:
+            self.log("❌ No session token or test jobs available", "ERROR")
+            return False
+        
+        # Test 1: Get existing job
+        test_job = self.test_jobs[0]
+        job_id = test_job.get('job_id')
+        
+        try:
+            response = self.session.get(
+                f"{API_BASE}/jobs/{job_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                job_data = response.json()
+                self.log(f"✅ Retrieved job: {job_data.get('title')}")
+                
+                # Verify job data matches
+                if job_data.get('job_id') == job_id:
+                    self.log("✅ Job ID matches")
+                else:
+                    self.log("❌ Job ID mismatch", "ERROR")
+                    
+            else:
+                self.log(f"❌ Failed to get job: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Error getting job: {str(e)}", "ERROR")
+            return False
+        
+        # Test 2: Get non-existent job
+        fake_job_id = f"job_{uuid.uuid4().hex[:12]}"
+        
+        try:
+            response = self.session.get(
+                f"{API_BASE}/jobs/{fake_job_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 404:
+                self.log("✅ Non-existent job returns 404")
+            else:
+                self.log(f"❌ Non-existent job should return 404, got {response.status_code}", "ERROR")
+                
+        except Exception as e:
+            self.log(f"❌ Error testing non-existent job: {str(e)}", "ERROR")
+        
+        return True
+    
+    def test_update_job(self):
+        """Test job updates"""
+        self.log("\n=== Testing Job Updates ===")
+        
+        if not self.session_token or not self.test_jobs:
+            self.log("❌ No session token or test jobs available", "ERROR")
+            return False
+        
+        test_job = self.test_jobs[0]
+        job_id = test_job.get('job_id')
+        
+        # Test 1: Update single field
+        update_data = {
+            "title": "Updated Senior Software Engineer"
+        }
+        
+        try:
+            response = self.session.put(
+                f"{API_BASE}/jobs/{job_id}",
+                json=update_data,
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                updated_job = response.json()
+                self.log(f"✅ Job title updated: {updated_job.get('title')}")
+                
+                # Verify updated_at timestamp changed
+                original_updated = test_job.get('updated_at')
+                new_updated = updated_job.get('updated_at')
+                if new_updated != original_updated:
+                    self.log("✅ updated_at timestamp changed")
+                else:
+                    self.log("❌ updated_at timestamp not changed", "ERROR")
+                    
+            else:
+                self.log(f"❌ Failed to update job: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Error updating job: {str(e)}", "ERROR")
+            return False
+        
+        # Test 2: Update multiple fields
+        multi_update = {
+            "status": "paused",
+            "department": "Updated Engineering",
+            "requirements": ["Updated requirement 1", "Updated requirement 2"]
+        }
+        
+        try:
+            response = self.session.put(
+                f"{API_BASE}/jobs/{job_id}",
+                json=multi_update,
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                updated_job = response.json()
+                self.log("✅ Multiple fields updated successfully")
+                
+                # Verify updates
+                if (updated_job.get('status') == 'paused' and 
+                    updated_job.get('department') == 'Updated Engineering'):
+                    self.log("✅ All updated fields correct")
+                else:
+                    self.log("❌ Some updated fields incorrect", "ERROR")
+                    
+            else:
+                self.log(f"❌ Failed to update multiple fields: {response.status_code}", "ERROR")
+                
+        except Exception as e:
+            self.log(f"❌ Error updating multiple fields: {str(e)}", "ERROR")
+        
+        # Test 3: Update non-existent job
+        fake_job_id = f"job_{uuid.uuid4().hex[:12]}"
+        
+        try:
+            response = self.session.put(
+                f"{API_BASE}/jobs/{fake_job_id}",
+                json={"title": "Should not work"},
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 404:
+                self.log("✅ Update non-existent job returns 404")
+            else:
+                self.log(f"❌ Update non-existent job should return 404, got {response.status_code}", "ERROR")
+                
+        except Exception as e:
+            self.log(f"❌ Error testing update non-existent job: {str(e)}", "ERROR")
+        
+        return True
+    
+    def test_delete_job(self):
+        """Test job deletion"""
+        self.log("\n=== Testing Job Deletion ===")
+        
+        if not self.session_token or not self.test_jobs:
+            self.log("❌ No session token or test jobs available", "ERROR")
+            return False
+        
+        # Use the last job for deletion test
+        test_job = self.test_jobs[-1]
+        job_id = test_job.get('job_id')
+        
+        # Test 1: Delete existing job
+        try:
+            response = self.session.delete(
+                f"{API_BASE}/jobs/{job_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                self.log(f"✅ Job deleted: {result.get('message')}")
+                
+                # Verify job is actually deleted
+                get_response = self.session.get(
+                    f"{API_BASE}/jobs/{job_id}",
+                    headers=self.get_auth_headers(),
+                    timeout=10
+                )
+                
+                if get_response.status_code == 404:
+                    self.log("✅ Deleted job no longer accessible")
+                else:
+                    self.log("❌ Deleted job still accessible", "ERROR")
+                    
+            else:
+                self.log(f"❌ Failed to delete job: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Error deleting job: {str(e)}", "ERROR")
+            return False
+        
+        # Test 2: Delete non-existent job
+        fake_job_id = f"job_{uuid.uuid4().hex[:12]}"
+        
+        try:
+            response = self.session.delete(
+                f"{API_BASE}/jobs/{fake_job_id}",
+                headers=self.get_auth_headers(),
+                timeout=10
+            )
+            
+            if response.status_code == 404:
+                self.log("✅ Delete non-existent job returns 404")
+            else:
+                self.log(f"❌ Delete non-existent job should return 404, got {response.status_code}", "ERROR")
+                
+        except Exception as e:
+            self.log(f"❌ Error testing delete non-existent job: {str(e)}", "ERROR")
+        
+        return True
+    
+    def run_all_tests(self):
+        """Run all job API tests"""
+        self.log("🚀 Starting Job Description API Tests")
+        self.log(f"Backend URL: {BACKEND_URL}")
+        
+        results = {
+            "session_creation": False,
+            "auth_protection": False,
+            "job_creation": False,
+            "job_listing": False,
+            "single_job_retrieval": False,
+            "job_updates": False,
+            "job_deletion": False
+        }
+        
+        # Test session creation
+        results["session_creation"] = self.create_test_session()
+        
+        if not results["session_creation"]:
+            self.log("❌ Cannot proceed without valid session", "ERROR")
+            return results
+        
+        # Run all tests
+        results["auth_protection"] = self.test_auth_protection()
+        results["job_creation"] = self.test_create_job()
+        results["job_listing"] = self.test_list_jobs()
+        results["single_job_retrieval"] = self.test_get_single_job()
+        results["job_updates"] = self.test_update_job()
+        results["job_deletion"] = self.test_delete_job()
+        
+        # Summary
+        self.log("\n" + "="*50)
+        self.log("TEST SUMMARY")
+        self.log("="*50)
+        
+        passed = sum(1 for result in results.values() if result)
+        total = len(results)
+        
+        for test_name, result in results.items():
+            status = "✅ PASS" if result else "❌ FAIL"
+            self.log(f"{test_name.replace('_', ' ').title()}: {status}")
+        
+        self.log(f"\nOverall: {passed}/{total} tests passed")
+        
+        if passed == total:
+            self.log("🎉 All tests passed! Job Description APIs are working correctly.")
+        else:
+            self.log(f"⚠️  {total - passed} test(s) failed. Please check the issues above.")
+        
+        return results
+
+if __name__ == "__main__":
+    tester = JobAPITester()
+    results = tester.run_all_tests()
+    
+    # Exit with error code if any tests failed
+    if not all(results.values()):
+        sys.exit(1)
