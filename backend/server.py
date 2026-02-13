@@ -163,8 +163,6 @@ def extract_candidate_name(resume_text: str) -> Optional[str]:
 # ATS-style screening with Gemini AI
 async def screen_resume_with_ai(resume_text: str, job_data: dict) -> dict:
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        
         # Build comprehensive prompt for ATS-style analysis
         prompt = f"""You are an expert ATS (Applicant Tracking System) and HR recruiter. Analyze this resume against the job description using ATS-style keyword matching and scoring.
 
@@ -209,7 +207,10 @@ Focus on:
 
 Be objective and data-driven in your analysis. Return ONLY valid JSON."""
 
-        response = model.generate_content(prompt)
+        response = gemini_client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt
+        )
         response_text = response.text.strip()
         
         # Extract JSON from response (remove markdown code blocks if present)
