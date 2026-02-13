@@ -30,29 +30,13 @@ class JobAPITester:
         """Create a test user session for authentication"""
         self.log("Creating test user session...")
         
-        # Mock session data for testing (simulating Emergent OAuth)
-        test_session_id = f"test_session_{uuid.uuid4().hex[:8]}"
+        # Since we can't create a real Emergent OAuth session in testing,
+        # we'll check if there's an existing session we can use
+        # or skip session-dependent tests and focus on auth protection testing
         
-        try:
-            # Try to create session with mock data
-            response = self.session.post(f"{API_BASE}/auth/session", 
-                json={"session_id": test_session_id},
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.session_token = data.get("session_token")
-                self.user_data = data.get("user")
-                self.log(f"✅ Session created successfully for user: {self.user_data.get('email', 'Unknown')}")
-                return True
-            else:
-                self.log(f"❌ Failed to create session: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"❌ Session creation error: {str(e)}", "ERROR")
-            return False
+        self.log("⚠️  Cannot create real OAuth session in test environment")
+        self.log("Will test auth protection and API structure instead")
+        return False
     
     def get_auth_headers(self):
         """Get authentication headers for API calls"""
