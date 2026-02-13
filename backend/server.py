@@ -11,7 +11,7 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 import requests
-from urllib.parse import urlencode, unquote
+from urllib.parse import urlencode, unquote, quote
 import base64
 import io
 import re
@@ -276,30 +276,94 @@ async def get_user_from_cookie(request: Request) -> Optional[User]:
     
     return User(**user_doc)
 
-@api_router.post("/auth/session")
-async def create_session(request: Request, response: Response):
-    body = await request.json()
-    session_id = body.get("session_id")
+# Google OAuth 2.0 Configuration
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
+
+@api_router.get("/auth/google/login")
+async def google_login():
+    """Generate Google OAuth authorization URL and return it."""
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="Google OAuth is not configured. Set GOOGLE_CLIENT_ID.")
     
-    if not session_id:
-        raise HTTPException(status_code=400, detail="Missing session_id")
+    redirect_uri = f"{FRONTEND_URL}/auth/callback"
+    state = uuid.uuid4().hex
+    
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "offline",
+        "state": state,
+        "prompt": "consent",
+    }
+    
+    auth_url = f"{GOOGLE_AUTH_URL}?{urlencode(params)}"
+    return {"auth_url": auth_url}
+
+@api_router.post("/auth/google/callback")
+async def google_callback(request: Request, response: Response):
+    """Exchange Google authorization code for tokens and create user session."""
+    body = await request.json()
+    code = body.get("code")
+    
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing authorization code")
+    
+    redirect_uri = f"{FRONTEND_URL}/auth/callback"
     
     try:
-        auth_response = requests.get(
-            "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
-            headers={"X-Session-ID": session_id},
-            timeout=10
+        # Exchange authorization code for tokens
+        token_response = requests.post(
+            GOOGLE_TOKEN_URL,
+            data={
+                "code": code,
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code",
+            },
+            timeout=10,
         )
         
-        if auth_response.status_code != 200:
-            raise HTTPException(status_code=401, detail="Invalid session_id")
+        if token_response.status_code != 200:
+            logging.error(f"Google token exchange failed: {token_response.text}")
+            raise HTTPException(status_code=401, detail="Failed to exchange authorization code")
         
-        session_data = auth_response.json()
+        token_data = token_response.json()
+        access_token = token_data.get("access_token")
         
+        if not access_token:
+            raise HTTPException(status_code=401, detail="No access token received from Google")
+        
+        # Fetch user profile from Google
+        userinfo_response = requests.get(
+            GOOGLE_USERINFO_URL,
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+        
+        if userinfo_response.status_code != 200:
+            raise HTTPException(status_code=401, detail="Failed to fetch user info from Google")
+        
+        google_user = userinfo_response.json()
+        email = google_user.get("email")
+        name = google_user.get("name", email)
+        picture = google_user.get("picture")
+        
+        if not email:
+            raise HTTPException(status_code=401, detail="Google account has no email")
+        
+        # Create or update user in database
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         
         existing_user = await db.users.find_one(
-            {"email": session_data["email"]},
+            {"email": email},
             {"_id": 0}
         )
         
@@ -308,27 +372,32 @@ async def create_session(request: Request, response: Response):
             await db.users.update_one(
                 {"user_id": user_id},
                 {"$set": {
-                    "name": session_data["name"],
-                    "picture": session_data["picture"]
+                    "name": name,
+                    "picture": picture,
                 }}
             )
         else:
             await db.users.insert_one({
                 "user_id": user_id,
-                "email": session_data["email"],
-                "name": session_data["name"],
-                "picture": session_data["picture"],
-                "created_at": datetime.now(timezone.utc)
+                "email": email,
+                "name": name,
+                "picture": picture,
+                "created_at": datetime.now(timezone.utc),
             })
         
-        session_token = session_data["session_token"]
+        # Create session
+        session_token = uuid.uuid4().hex
         expires_at = datetime.now(timezone.utc) + timedelta(days=7)
         
         await db.user_sessions.insert_one({
             "user_id": user_id,
             "session_token": session_token,
             "expires_at": expires_at,
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(timezone.utc),
+            "google_tokens": {
+                "access_token": access_token,
+                "refresh_token": token_data.get("refresh_token"),
+            },
         })
         
         user_doc = await db.users.find_one(
@@ -344,16 +413,16 @@ async def create_session(request: Request, response: Response):
             secure=True,
             samesite="none",
             max_age=7 * 24 * 60 * 60,  # 7 days
-            path="/"
+            path="/",
         )
         
         return {
             "session_token": session_token,
-            "user": user_doc
+            "user": user_doc,
         }
     
     except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Auth service error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Google OAuth error: {str(e)}")
 
 @api_router.get("/auth/me")
 async def get_current_user(request: Request):
@@ -997,3 +1066,7 @@ logger = logging.getLogger(__name__)
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)

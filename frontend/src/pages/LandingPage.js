@@ -41,9 +41,13 @@ const LandingPage = () => {
     checkAuth();
   }, [navigate]);
 
-  const handleLogin = () => {
-    const redirectUrl = window.location.origin + '/dashboard';
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  const handleLogin = async () => {
+    try {
+      const response = await axios.get(`${API}/auth/google/login`);
+      window.location.href = response.data.auth_url;
+    } catch (error) {
+      console.error('Failed to initiate Google login:', error);
+    }
   };
 
   const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
@@ -448,7 +452,7 @@ const LandingPage = () => {
             <span className="text-xl font-bold text-slate-900 dark:text-white">Recruit-AI</span>
           </div>
           <p className="text-slate-600 dark:text-slate-400">
-            © 2026 Recruit-AI. Powered by Emergent AI. The future of intelligent hiring.
+            {'© 2026 Recruit-AI. The future of intelligent hiring.'}
           </p>
         </div>
       </footer>
