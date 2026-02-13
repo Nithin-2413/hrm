@@ -125,6 +125,8 @@ class JobAPITester:
                 structure_valid = False
         
         return structure_valid
+    
+    def test_create_job(self):
         """Test job creation with various scenarios"""
         self.log("\n=== Testing Job Creation ===")
         
