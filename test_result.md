@@ -201,6 +201,42 @@ frontend:
         agent: "main"
         comment: "Phase 2 - Created full job form with multi-section inputs: basic info, description, requirements (dynamic list), nice-to-have skills, salary range (optional), and status selector. Form validates required fields and handles both create and edit modes."
 
+  - task: "Resume Upload with Batch Support"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/Screening.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 3 - Created Screening page with drag-and-drop resume upload, supporting PDF and DOCX files. Allows batch upload of multiple resumes. Files are validated for type and size (max 10MB). Integrated with backend /api/resumes/upload endpoint."
+
+  - task: "AI Resume Screening Interface"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/Screening.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 3 - Added job selection dropdown and screening trigger. Users can select active job, then screen all uploaded resumes against it in batch. Shows screening progress and redirects to history upon completion."
+
+  - task: "Screening History & Results Display"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/History.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 3 - Created History page showing all screening results with match scores, candidate names, and recommended actions. Clicking 'View Details' opens modal with comprehensive analysis including strengths, gaps, highlights, and detailed breakdown. Score-based color coding (green/amber/red) for quick assessment."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
