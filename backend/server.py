@@ -104,6 +104,11 @@ class Resume(BaseModel):
     extracted_text: str
     created_at: datetime
 
+class StatusHistoryEntry(BaseModel):
+    status: str
+    changed_at: datetime
+    changed_by: Optional[str] = None
+
 class ScreeningResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
     screening_id: str
@@ -121,11 +126,17 @@ class ScreeningResult(BaseModel):
     key_highlights: List[str]
     recommended_action: str  # Interview, Maybe, Reject
     detailed_analysis: str
+    status: str = "new"  # new, shortlisted, interviewed, hired, rejected
+    status_history: List[StatusHistoryEntry] = []
     created_at: datetime
+    updated_at: datetime
 
 class ScreeningRequest(BaseModel):
     job_id: str
     resume_ids: List[str]
+
+class StatusUpdate(BaseModel):
+    status: str  # shortlisted, interviewed, hired, rejected
 
 # Helper function to extract text from PDF
 def extract_text_from_pdf(file_content: bytes) -> str:
