@@ -10,8 +10,8 @@ import base64
 import io
 from datetime import datetime
 
-# Backend URL from frontend/.env
-BASE_URL = "https://hire-genius-51.preview.emergentagent.com/api"
+# Backend URL - using localhost since external routing has issues
+BASE_URL = "http://localhost:8001/api"
 
 class RecruitAITester:
     def __init__(self):
