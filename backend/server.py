@@ -483,6 +483,216 @@ async def delete_job(job_id: str, request: Request):
     
     return {"message": "Job deleted successfully"}
 
+# Resume Upload Endpoints
+
+@api_router.post("/resumes/upload")
+async def upload_resumes(request: Request, files: List[UploadFile] = File(...)):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    uploaded_resumes = []
+    
+    for file in files:
+        # Validate file type
+        if not file.filename.lower().endswith(('.pdf', '.docx')):
+            raise HTTPException(status_code=400, detail=f"Invalid file type: {file.filename}. Only PDF and DOCX are supported.")
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Validate file size (max 10MB)
+        if len(file_content) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail=f"File too large: {file.filename}. Maximum size is 10MB.")
+        
+        # Extract text based on file type
+        file_type = 'pdf' if file.filename.lower().endswith('.pdf') else 'docx'
+        
+        if file_type == 'pdf':
+            extracted_text = extract_text_from_pdf(file_content)
+        else:
+            extracted_text = extract_text_from_docx(file_content)
+        
+        if not extracted_text or len(extracted_text) < 50:
+            raise HTTPException(status_code=400, detail=f"Could not extract sufficient text from {file.filename}")
+        
+        # Encode file content to base64
+        file_content_base64 = base64.b64encode(file_content).decode('utf-8')
+        
+        # Create resume record
+        resume_id = f"resume_{uuid.uuid4().hex[:12]}"
+        now = datetime.now(timezone.utc)
+        
+        resume_doc = {
+            "resume_id": resume_id,
+            "user_id": user.user_id,
+            "filename": file.filename,
+            "file_content": file_content_base64,
+            "file_type": file_type,
+            "extracted_text": extracted_text,
+            "created_at": now
+        }
+        
+        await db.resumes.insert_one(resume_doc)
+        
+        uploaded_resumes.append({
+            "resume_id": resume_id,
+            "filename": file.filename,
+            "file_type": file_type,
+            "text_length": len(extracted_text)
+        })
+    
+    return {
+        "message": f"Successfully uploaded {len(uploaded_resumes)} resume(s)",
+        "resumes": uploaded_resumes
+    }
+
+@api_router.post("/resumes/screen")
+async def screen_resumes(request: Request, screening_request: ScreeningRequest):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Get job description
+    job = await db.jobs.find_one(
+        {"job_id": screening_request.job_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    screening_results = []
+    
+    for resume_id in screening_request.resume_ids:
+        # Get resume
+        resume = await db.resumes.find_one(
+            {"resume_id": resume_id, "user_id": user.user_id},
+            {"_id": 0}
+        )
+        
+        if not resume:
+            continue  # Skip if resume not found
+        
+        # Screen resume with AI
+        ai_result = await screen_resume_with_ai(resume['extracted_text'], job)
+        
+        # Extract candidate name
+        candidate_name = extract_candidate_name(resume['extracted_text'])
+        
+        # Create screening result
+        screening_id = f"screening_{uuid.uuid4().hex[:12]}"
+        now = datetime.now(timezone.utc)
+        
+        screening_doc = {
+            "screening_id": screening_id,
+            "user_id": user.user_id,
+            "resume_id": resume_id,
+            "job_id": screening_request.job_id,
+            "candidate_name": candidate_name,
+            "match_score": ai_result['match_score'],
+            "experience_score": ai_result['experience_score'],
+            "skills_score": ai_result['skills_score'],
+            "keyword_score": ai_result['keyword_score'],
+            "summary": ai_result['summary'],
+            "strengths": ai_result['strengths'],
+            "gaps": ai_result['gaps'],
+            "key_highlights": ai_result['key_highlights'],
+            "recommended_action": ai_result['recommended_action'],
+            "detailed_analysis": ai_result['detailed_analysis'],
+            "created_at": now
+        }
+        
+        await db.screenings.insert_one(screening_doc)
+        
+        screening_results.append({
+            "screening_id": screening_id,
+            "resume_id": resume_id,
+            "filename": resume['filename'],
+            "candidate_name": candidate_name,
+            "match_score": ai_result['match_score'],
+            "recommended_action": ai_result['recommended_action']
+        })
+    
+    return {
+        "message": f"Successfully screened {len(screening_results)} resume(s)",
+        "results": screening_results
+    }
+
+@api_router.get("/screenings")
+async def list_screenings(request: Request, job_id: Optional[str] = None):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    query = {"user_id": user.user_id}
+    if job_id:
+        query["job_id"] = job_id
+    
+    screenings = await db.screenings.find(query, {"_id": 0}).sort("created_at", -1).to_list(length=None)
+    
+    # Enrich with job and resume info
+    for screening in screenings:
+        # Get job info
+        job = await db.jobs.find_one(
+            {"job_id": screening['job_id']},
+            {"_id": 0, "title": 1, "department": 1}
+        )
+        screening['job_title'] = job['title'] if job else "Unknown"
+        screening['job_department'] = job.get('department') if job else None
+        
+        # Get resume info
+        resume = await db.resumes.find_one(
+            {"resume_id": screening['resume_id']},
+            {"_id": 0, "filename": 1}
+        )
+        screening['filename'] = resume['filename'] if resume else "Unknown"
+    
+    return screenings
+
+@api_router.get("/screenings/{screening_id}")
+async def get_screening(screening_id: str, request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    screening = await db.screenings.find_one(
+        {"screening_id": screening_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not screening:
+        raise HTTPException(status_code=404, detail="Screening not found")
+    
+    # Get job info
+    job = await db.jobs.find_one(
+        {"job_id": screening['job_id']},
+        {"_id": 0}
+    )
+    screening['job'] = job
+    
+    # Get resume info
+    resume = await db.resumes.find_one(
+        {"resume_id": screening['resume_id']},
+        {"_id": 0, "filename": 1, "file_type": 1, "extracted_text": 1}
+    )
+    screening['resume'] = resume
+    
+    return screening
+
+@api_router.get("/resumes")
+async def list_resumes(request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    resumes = await db.resumes.find(
+        {"user_id": user.user_id},
+        {"_id": 0, "file_content": 0, "extracted_text": 0}  # Exclude large fields
+    ).sort("created_at", -1).to_list(length=None)
+    
+    return resumes
+
 app.include_router(api_router)
 
 app.add_middleware(
