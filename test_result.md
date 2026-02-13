@@ -178,6 +178,9 @@ backend:
       - working: "NA"
         agent: "main"
         comment: "Phase 3 - Implemented POST /api/resumes/screen endpoint using Google Gemini 1.5 Flash for AI analysis. Performs ATS-style screening with keyword matching, experience evaluation, and skills assessment. Returns structured scores (overall match, experience, skills, keywords 0-100), strengths, gaps, highlights, recommended action (Interview/Maybe/Reject), and detailed analysis. Processes batch screening for multiple resumes."
+      - working: "NA"
+        agent: "main"
+        comment: "PHASE 4 PREPARATION - Migrated from deprecated google.generativeai to new google.genai package. Updated screen_resume_with_ai function to use gemini_client.models.generate_content() with model='gemini-1.5-flash'. Backend restarted successfully, deprecation warning resolved. Ready for Phase 3 testing and Phase 4 extensions."
 
   - task: "Screening History APIs"
     implemented: true
