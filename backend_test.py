@@ -106,9 +106,15 @@ class JobAPITester:
                 if method == "GET":
                     response = requests.get(url, timeout=10)
                 elif method == "POST":
-                    response = requests.post(url, json={"title": "Test", "description": "Test"}, timeout=10)
+                    response = requests.post(url, 
+                                           json={"title": "Test Job", "description": "Test Description"}, 
+                                           headers={"Content-Type": "application/json"},
+                                           timeout=10)
                 elif method == "PUT":
-                    response = requests.put(url, json={"title": "Test"}, timeout=10)
+                    response = requests.put(url, 
+                                          json={"title": "Test"}, 
+                                          headers={"Content-Type": "application/json"},
+                                          timeout=10)
                 elif method == "DELETE":
                     response = requests.delete(url, timeout=10)
                 
