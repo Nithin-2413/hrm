@@ -50,7 +50,8 @@ const Dashboard = () => {
     };
 
     checkAuth();
-  }, [location.state, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const loadStats = async () => {
     try {
