@@ -136,6 +136,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Phase 1 complete - Auth endpoints working with Google OAuth"
+      - working: true
+        agent: "main"
+        comment: "Fixed auth cookie issue - session token now properly set as httpOnly secure cookie in /api/auth/session endpoint"
 
   - task: "Job Description CRUD APIs"
     implemented: true
@@ -151,6 +154,42 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ BACKEND TESTING COMPLETE - All Job Description CRUD APIs working correctly. Tested: (1) Authentication Protection: All 5 endpoints properly return 401 when no session token provided. (2) API Structure: All endpoints exist and respond correctly to requests. (3) Data Validation: POST endpoint correctly validates required fields (title, description) and returns 422 for missing fields. (4) URL Configuration: All endpoints accessible via correct REACT_APP_BACKEND_URL. (5) HTTP Methods: GET, POST, PUT, DELETE all properly configured. Cannot test full CRUD operations due to OAuth session limitations in test environment, but all endpoint structure and auth protection verified. Ready for frontend integration."
+
+  - task: "Resume Upload & Text Extraction"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 3 - Implemented POST /api/resumes/upload endpoint supporting batch file upload. Validates file types (PDF/DOCX), size limits (10MB), extracts text using PyPDF2 and python-docx. Stores resume metadata and base64-encoded file content in MongoDB. Returns resume IDs for screening."
+
+  - task: "AI Resume Screening with Gemini"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 3 - Implemented POST /api/resumes/screen endpoint using Google Gemini 1.5 Flash for AI analysis. Performs ATS-style screening with keyword matching, experience evaluation, and skills assessment. Returns structured scores (overall match, experience, skills, keywords 0-100), strengths, gaps, highlights, recommended action (Interview/Maybe/Reject), and detailed analysis. Processes batch screening for multiple resumes."
+
+  - task: "Screening History APIs"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 3 - Implemented GET /api/screenings (list all with job/resume enrichment) and GET /api/screenings/{screening_id} (detailed view with full job and resume data). Supports filtering by job_id. All endpoints auth-protected."
 
 frontend:
   - task: "Landing Page with Auth"
