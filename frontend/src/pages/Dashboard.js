@@ -236,7 +236,7 @@ const Dashboard = () => {
               <h2 className="text-2xl font-semibold mb-6 tracking-tight">Your Stats</h2>
               <div className="space-y-6">
                 <div>
-                  <div className="text-4xl font-bold mb-1">0</div>
+                  <div className="text-4xl font-bold mb-1">{stats.totalScreenings}</div>
                   <div className="text-sm text-muted-foreground">Resumes Screened</div>
                 </div>
                 <div>
