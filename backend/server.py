@@ -94,6 +94,138 @@ class JobDescriptionUpdate(BaseModel):
     salary_range: Optional[SalaryRange] = None
     status: Optional[str] = None
 
+class Resume(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    resume_id: str
+    user_id: str
+    filename: str
+    file_content: str  # base64 encoded
+    file_type: str  # pdf or docx
+    extracted_text: str
+    created_at: datetime
+
+class ScreeningResult(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    screening_id: str
+    user_id: str
+    resume_id: str
+    job_id: str
+    candidate_name: Optional[str] = None
+    match_score: int  # 0-100
+    experience_score: int  # 0-100
+    skills_score: int  # 0-100
+    keyword_score: int  # 0-100
+    summary: str
+    strengths: List[str]
+    gaps: List[str]
+    key_highlights: List[str]
+    recommended_action: str  # Interview, Maybe, Reject
+    detailed_analysis: str
+    created_at: datetime
+
+class ScreeningRequest(BaseModel):
+    job_id: str
+    resume_ids: List[str]
+
+# Helper function to extract text from PDF
+def extract_text_from_pdf(file_content: bytes) -> str:
+    try:
+        pdf_file = io.BytesIO(file_content)
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        return text.strip()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to extract PDF text: {str(e)}")
+
+# Helper function to extract text from DOCX
+def extract_text_from_docx(file_content: bytes) -> str:
+    try:
+        docx_file = io.BytesIO(file_content)
+        doc = docx.Document(docx_file)
+        text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+        return text.strip()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to extract DOCX text: {str(e)}")
+
+# Helper function to extract candidate name from resume text
+def extract_candidate_name(resume_text: str) -> Optional[str]:
+    # Simple heuristic: first line or first few words often contain the name
+    lines = resume_text.strip().split('\n')
+    if lines:
+        first_line = lines[0].strip()
+        # Return first line if it's short (likely a name)
+        if len(first_line) < 50 and not any(char.isdigit() for char in first_line):
+            return first_line
+    return None
+
+# ATS-style screening with Gemini AI
+async def screen_resume_with_ai(resume_text: str, job_data: dict) -> dict:
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Build comprehensive prompt for ATS-style analysis
+        prompt = f"""You are an expert ATS (Applicant Tracking System) and HR recruiter. Analyze this resume against the job description using ATS-style keyword matching and scoring.
+
+JOB DESCRIPTION:
+Title: {job_data['title']}
+Department: {job_data.get('department', 'N/A')}
+Experience Level Required: {job_data['experience_level']}
+Employment Type: {job_data['employment_type']}
+
+Description:
+{job_data['description']}
+
+REQUIRED QUALIFICATIONS:
+{chr(10).join(f"- {req}" for req in job_data.get('requirements', []))}
+
+NICE-TO-HAVE QUALIFICATIONS:
+{chr(10).join(f"- {skill}" for skill in job_data.get('nice_to_have', []))}
+
+RESUME:
+{resume_text}
+
+Provide a comprehensive ATS-style analysis in the following JSON format:
+{{
+    "match_score": <0-100, overall match score>,
+    "experience_score": <0-100, based on years and relevance of experience>,
+    "skills_score": <0-100, based on required and nice-to-have skills match>,
+    "keyword_score": <0-100, based on keyword density and relevance>,
+    "summary": "<2-3 sentence overview of candidate fit>",
+    "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
+    "gaps": ["<gap 1>", "<gap 2>"],
+    "key_highlights": ["<highlight 1>", "<highlight 2>", "<highlight 3>"],
+    "recommended_action": "<Interview|Maybe|Reject>",
+    "detailed_analysis": "<Comprehensive paragraph analyzing experience, skills, education, and overall fit>"
+}}
+
+Focus on:
+1. Keyword matching between resume and job requirements
+2. Experience level alignment (years and relevance)
+3. Technical skills match (required vs nice-to-have)
+4. Education and certifications relevance
+5. Overall cultural and role fit
+
+Be objective and data-driven in your analysis. Return ONLY valid JSON."""
+
+        response = model.generate_content(prompt)
+        response_text = response.text.strip()
+        
+        # Extract JSON from response (remove markdown code blocks if present)
+        if response_text.startswith('```'):
+            response_text = re.sub(r'^```(?:json)?\n', '', response_text)
+            response_text = re.sub(r'\n```$', '', response_text)
+        
+        import json
+        result = json.loads(response_text)
+        
+        return result
+        
+    except Exception as e:
+        logging.error(f"AI screening error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI screening failed: {str(e)}")
+
 async def get_user_from_cookie(request: Request) -> Optional[User]:
     session_token = request.cookies.get("session_token")
     if not session_token:
