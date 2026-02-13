@@ -233,7 +233,7 @@ const Dashboard = () => {
                   <div className="text-sm text-muted-foreground">Resumes Screened</div>
                 </div>
                 <div>
-                  <div className="text-4xl font-bold mb-1">0</div>
+                  <div className="text-4xl font-bold mb-1">{stats.activeJobs}</div>
                   <div className="text-sm text-muted-foreground">Active Jobs</div>
                 </div>
                 <div>
