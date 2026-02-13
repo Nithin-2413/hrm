@@ -639,14 +639,53 @@ async def screen_resumes(request: Request, screening_request: ScreeningRequest):
     }
 
 @api_router.get("/screenings")
-async def list_screenings(request: Request, job_id: Optional[str] = None):
+async def list_screenings(
+    request: Request, 
+    job_id: Optional[str] = None,
+    status: Optional[str] = None,
+    min_score: Optional[int] = None,
+    max_score: Optional[int] = None,
+    search: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
     user = await get_user_from_cookie(request)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
     query = {"user_id": user.user_id}
+    
+    # Filter by job
     if job_id:
         query["job_id"] = job_id
+    
+    # Filter by status
+    if status:
+        query["status"] = status
+    
+    # Filter by score range
+    if min_score is not None or max_score is not None:
+        score_query = {}
+        if min_score is not None:
+            score_query["$gte"] = min_score
+        if max_score is not None:
+            score_query["$lte"] = max_score
+        if score_query:
+            query["match_score"] = score_query
+    
+    # Filter by date range
+    if start_date or end_date:
+        date_query = {}
+        if start_date:
+            date_query["$gte"] = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+        if end_date:
+            date_query["$lte"] = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        if date_query:
+            query["created_at"] = date_query
+    
+    # Search by candidate name
+    if search:
+        query["candidate_name"] = {"$regex": search, "$options": "i"}
     
     screenings = await db.screenings.find(query, {"_id": 0}).sort("created_at", -1).to_list(length=None)
     
