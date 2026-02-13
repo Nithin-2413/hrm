@@ -124,7 +124,7 @@ async def get_user_from_cookie(request: Request) -> Optional[User]:
     return User(**user_doc)
 
 @api_router.post("/auth/session")
-async def create_session(request: Request):
+async def create_session(request: Request, response: Response):
     body = await request.json()
     session_id = body.get("session_id")
     
@@ -132,16 +132,16 @@ async def create_session(request: Request):
         raise HTTPException(status_code=400, detail="Missing session_id")
     
     try:
-        response = requests.get(
+        auth_response = requests.get(
             "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
             headers={"X-Session-ID": session_id},
             timeout=10
         )
         
-        if response.status_code != 200:
+        if auth_response.status_code != 200:
             raise HTTPException(status_code=401, detail="Invalid session_id")
         
-        session_data = response.json()
+        session_data = auth_response.json()
         
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         
@@ -181,6 +181,17 @@ async def create_session(request: Request):
         user_doc = await db.users.find_one(
             {"user_id": user_id},
             {"_id": 0}
+        )
+        
+        # Set the session cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=True,
+            samesite="none",
+            max_age=7 * 24 * 60 * 60,  # 7 days
+            path="/"
         )
         
         return {
