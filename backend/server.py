@@ -39,6 +39,52 @@ class UserSession(BaseModel):
     created_at: datetime
     google_tokens: Optional[dict] = None
 
+class SalaryRange(BaseModel):
+    min: Optional[int] = None
+    max: Optional[int] = None
+    currency: str = "USD"
+
+class JobDescription(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    job_id: str
+    user_id: str
+    title: str
+    department: Optional[str] = None
+    location: str = "Remote"
+    employment_type: str = "Full-time"
+    experience_level: str = "Mid"
+    description: str
+    requirements: List[str] = []
+    nice_to_have: List[str] = []
+    salary_range: Optional[SalaryRange] = None
+    status: str = "draft"  # draft, active, paused, closed
+    created_at: datetime
+    updated_at: datetime
+
+class JobDescriptionCreate(BaseModel):
+    title: str
+    department: Optional[str] = None
+    location: str = "Remote"
+    employment_type: str = "Full-time"
+    experience_level: str = "Mid"
+    description: str
+    requirements: List[str] = []
+    nice_to_have: List[str] = []
+    salary_range: Optional[SalaryRange] = None
+    status: str = "draft"
+
+class JobDescriptionUpdate(BaseModel):
+    title: Optional[str] = None
+    department: Optional[str] = None
+    location: Optional[str] = None
+    employment_type: Optional[str] = None
+    experience_level: Optional[str] = None
+    description: Optional[str] = None
+    requirements: Optional[List[str]] = None
+    nice_to_have: Optional[List[str]] = None
+    salary_range: Optional[SalaryRange] = None
+    status: Optional[str] = None
+
 async def get_user_from_cookie(request: Request) -> Optional[User]:
     session_token = request.cookies.get("session_token")
     if not session_token:
