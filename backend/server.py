@@ -612,7 +612,14 @@ async def screen_resumes(request: Request, screening_request: ScreeningRequest):
             "key_highlights": ai_result['key_highlights'],
             "recommended_action": ai_result['recommended_action'],
             "detailed_analysis": ai_result['detailed_analysis'],
-            "created_at": now
+            "status": "new",
+            "status_history": [{
+                "status": "new",
+                "changed_at": now,
+                "changed_by": user.user_id
+            }],
+            "created_at": now,
+            "updated_at": now
         }
         
         await db.screenings.insert_one(screening_doc)
