@@ -26,7 +26,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState({
     activeJobs: 0,
     totalResumes: 0,
-    scheduledInterviews: 0
+    totalScreenings: 0
   });
 
   useEffect(() => {
