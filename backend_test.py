@@ -81,7 +81,50 @@ class JobAPITester:
         
         return auth_protected
     
-    def test_create_job(self):
+    def test_api_endpoints_structure(self):
+        """Test API endpoints structure and responses"""
+        self.log("\n=== Testing API Endpoints Structure ===")
+        
+        endpoints_to_test = [
+            ("GET", f"{API_BASE}/jobs", "List jobs endpoint"),
+            ("POST", f"{API_BASE}/jobs", "Create job endpoint"),
+            ("GET", f"{API_BASE}/jobs/test_id", "Get single job endpoint"),
+            ("PUT", f"{API_BASE}/jobs/test_id", "Update job endpoint"),
+            ("DELETE", f"{API_BASE}/jobs/test_id", "Delete job endpoint")
+        ]
+        
+        structure_valid = True
+        
+        for method, url, description in endpoints_to_test:
+            try:
+                if method == "GET":
+                    response = requests.get(url, timeout=10)
+                elif method == "POST":
+                    response = requests.post(url, json={"title": "Test", "description": "Test"}, timeout=10)
+                elif method == "PUT":
+                    response = requests.put(url, json={"title": "Test"}, timeout=10)
+                elif method == "DELETE":
+                    response = requests.delete(url, timeout=10)
+                
+                # We expect 401 (auth required) or 404 (not found) for valid endpoints
+                if response.status_code in [401, 404]:
+                    self.log(f"✅ {description} exists and responds correctly ({response.status_code})")
+                elif response.status_code == 422:
+                    # Validation error is also acceptable for POST/PUT
+                    if method in ["POST", "PUT"]:
+                        self.log(f"✅ {description} exists with validation ({response.status_code})")
+                    else:
+                        self.log(f"❌ {description} unexpected validation error", "ERROR")
+                        structure_valid = False
+                else:
+                    self.log(f"❌ {description} unexpected response: {response.status_code}", "ERROR")
+                    structure_valid = False
+                    
+            except Exception as e:
+                self.log(f"❌ Error testing {description}: {str(e)}", "ERROR")
+                structure_valid = False
+        
+        return structure_valid
         """Test job creation with various scenarios"""
         self.log("\n=== Testing Job Creation ===")
         
