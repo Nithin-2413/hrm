@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, LogOut, Upload, FileText, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Sparkles, Home, Upload, FileText, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
