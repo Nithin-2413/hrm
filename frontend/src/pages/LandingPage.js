@@ -4,10 +4,6 @@ import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 const LandingPage = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -25,29 +21,8 @@ const LandingPage = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Check if user is already authenticated and redirect to dashboard
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        await axios.get(`${API}/auth/me`, {
-          withCredentials: true
-        });
-        // User is authenticated, redirect to dashboard
-        navigate('/dashboard', { replace: true });
-      } catch (error) {
-        // User is not authenticated, stay on landing page
-      }
-    };
-    checkAuth();
-  }, [navigate]);
-
-  const handleLogin = async () => {
-    try {
-      const response = await axios.get(`${API}/auth/google/login`);
-      window.location.href = response.data.auth_url;
-    } catch (error) {
-      console.error('Failed to initiate Google login:', error);
-    }
+  const handleGetStarted = () => {
+    navigate('/dashboard');
   };
 
   const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
