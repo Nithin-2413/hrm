@@ -288,7 +288,7 @@ Focus on:
 Be objective and data-driven in your analysis. Return ONLY valid JSON."""
 
         response = gemini_client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-2.0-flash-exp',
             contents=prompt
         )
         response_text = response.text.strip()
