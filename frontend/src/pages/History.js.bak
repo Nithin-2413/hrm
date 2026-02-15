@@ -27,12 +27,12 @@ import { Card, CardContent } from '../components/ui/card';
 import { Progress } from '../components/ui/progress';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import apiClient from '../utils/api';
+import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
-
-
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const History = () => {
   const navigate = useNavigate();
@@ -74,7 +74,7 @@ const History = () => {
 
   const checkAuthAndLoadScreenings = async () => {
     try {
-      const userResponse = await apiClient.get('/auth/me`, {
+      const userResponse = await axios.get(`${API}/auth/me`, {
         withCredentials: true
       });
       setUser(userResponse.data);
@@ -89,7 +89,7 @@ const History = () => {
 
   const loadScreenings = async () => {
     try {
-      const response = await apiClient.get('/screenings`, {
+      const response = await axios.get(`${API}/screenings`, {
         withCredentials: true
       });
       setScreenings(response.data);
@@ -142,7 +142,7 @@ const History = () => {
 
   const handleLogout = async () => {
     try {
-      await apiClient.post('/auth/logout`, {});
+      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
@@ -152,7 +152,7 @@ const History = () => {
 
   const viewDetails = async (screeningId) => {
     try {
-      const response = await apiClient.get('/screenings/${screeningId}`, {
+      const response = await axios.get(`${API}/screenings/${screeningId}`, {
         withCredentials: true
       });
       setSelectedScreening(response.data);
@@ -168,7 +168,7 @@ const History = () => {
       await axios.put(
         `${API}/screenings/${screeningId}/status`,
         { status: newStatus },
-        
+        { withCredentials: true }
       );
       
       // Update local state
@@ -188,7 +188,7 @@ const History = () => {
       await axios.post(
         `${API}/screenings/bulk-update-status`,
         { screening_ids: selectedIds, status: newStatus },
-        
+        { withCredentials: true }
       );
       
       // Update local state
