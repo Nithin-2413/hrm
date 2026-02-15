@@ -239,12 +239,44 @@ Be objective and data-driven in your analysis. Return ONLY valid JSON."""
         raise HTTPException(status_code=500, detail=f"AI screening failed: {str(e)}")
 
 async def get_user_from_cookie(request: Request) -> Optional[User]:
+    # First, try to get session from cookie (legacy)
     session_token = request.cookies.get("session_token")
     if not session_token:
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             session_token = auth_header.replace("Bearer ", "")
     
+    # NEW: Check for X-Session-ID header (session-based, no auth required)
+    session_id = request.headers.get("X-Session-ID")
+    
+    if session_id:
+        # Session-based authentication (no login required)
+        # Check if user exists for this session
+        user_doc = await db.users.find_one(
+            {"session_id": session_id},
+            {"_id": 0}
+        )
+        
+        if user_doc:
+            return User(**user_doc)
+        
+        # Create a new user for this session
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        now = datetime.now(timezone.utc)
+        
+        new_user = {
+            "user_id": user_id,
+            "session_id": session_id,
+            "email": f"{user_id}@local.session",
+            "name": "Guest User",
+            "picture": None,
+            "created_at": now,
+        }
+        
+        await db.users.insert_one(new_user)
+        return User(**new_user)
+    
+    # Legacy token-based authentication
     if not session_token:
         return None
     
