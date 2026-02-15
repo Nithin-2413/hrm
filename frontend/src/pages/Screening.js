@@ -31,35 +31,17 @@ const Screening = () => {
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
-    checkAuthAndLoadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadJobs();
   }, []);
 
-  const checkAuthAndLoadData = async () => {
+  const loadJobs = async () => {
     try {
-      const userResponse = await apiClient.get('/auth/me`, {
-        withCredentials: true
-      });
-      setUser(userResponse.data);
-      
       // Load active jobs
-      const jobsResponse = await apiClient.get('/jobs?status=active`, {
-        withCredentials: true
-      });
+      const jobsResponse = await apiClient.get('/jobs?status=active');
       setJobs(jobsResponse.data);
     } catch (error) {
-      console.error('Auth error:', error);
-      navigate('/login');
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await apiClient.post('/auth/logout`, {});
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      navigate('/login');
+      console.error('Failed to load jobs:', error);
+      toast.error('Failed to load jobs');
     }
   };
 
