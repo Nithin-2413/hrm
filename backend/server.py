@@ -698,10 +698,13 @@ async def upload_resumes(request: Request, files: List[UploadFile] = File(...)):
         if not extracted_text or len(extracted_text) < 50:
             raise HTTPException(status_code=400, detail=f"Could not extract sufficient text from {file.filename}")
         
+        # Parse resume with AI to extract structured data
+        parsed_data = await parse_resume_with_ai(extracted_text)
+        
         # Encode file content to base64
         file_content_base64 = base64.b64encode(file_content).decode('utf-8')
         
-        # Create resume record
+        # Create resume record with parsed data
         resume_id = f"resume_{uuid.uuid4().hex[:12]}"
         now = datetime.now(timezone.utc)
         
@@ -712,6 +715,15 @@ async def upload_resumes(request: Request, files: List[UploadFile] = File(...)):
             "file_content": file_content_base64,
             "file_type": file_type,
             "extracted_text": extracted_text,
+            # Parsed data from AI
+            "parsed_name": parsed_data.get("name"),
+            "parsed_email": parsed_data.get("email"),
+            "parsed_phone": parsed_data.get("phone"),
+            "parsed_skills": parsed_data.get("skills", []),
+            "parsed_experience_years": parsed_data.get("experience_years", 0),
+            "parsed_education": parsed_data.get("education"),
+            "parsed_current_role": parsed_data.get("current_role"),
+            "parsed_achievements": parsed_data.get("key_achievements", []),
             "created_at": now
         }
         
@@ -721,7 +733,10 @@ async def upload_resumes(request: Request, files: List[UploadFile] = File(...)):
             "resume_id": resume_id,
             "filename": file.filename,
             "file_type": file_type,
-            "text_length": len(extracted_text)
+            "text_length": len(extracted_text),
+            "candidate_name": parsed_data.get("name"),
+            "skills_count": len(parsed_data.get("skills", [])),
+            "experience_years": parsed_data.get("experience_years", 0)
         })
     
     return {
