@@ -102,11 +102,11 @@ const LandingPage = () => {
             >
               <ThemeToggle />
               <Button
-                data-testid="nav-login-button"
-                onClick={handleLogin}
+                data-testid="nav-get-started-button"
+                onClick={handleGetStarted}
                 className="bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 hover:from-indigo-700 hover:via-purple-700 hover:to-violet-700 text-white shadow-lg shadow-indigo-500/30 dark:shadow-indigo-500/20 rounded-full px-6 h-11 font-semibold transition-all"
               >
-                Sign In
+                Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </motion.div>
