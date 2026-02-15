@@ -47,13 +47,13 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background" data-testid="dashboard-container">
-      <nav className="border-b glass-surface sticky top-0 z-20">
+    <div className="min-h-screen bg-background gradient-mesh" data-testid="dashboard-container">
+      <nav className="glass-nav sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg ai-gradient flex items-center justify-center">
+              <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
+                <div className="w-8 h-8 rounded-xl gradient-primary flex items-center justify-center shadow-lg">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-xl font-bold tracking-tight">Recruit-AI</span>
@@ -135,7 +135,7 @@ const Dashboard = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="md:col-span-8 p-8 rounded-xl border bg-card hover:shadow-md transition-shadow"
+              className="md:col-span-8 glass-card p-8"
               data-testid="quick-actions-card"
             >
               <h2 className="text-2xl font-semibold mb-6 tracking-tight">Quick Actions</h2>
@@ -209,7 +209,7 @@ const Dashboard = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className="md:col-span-4 p-8 rounded-xl border bg-secondary/20"
+              className="md:col-span-4 glass-card p-8 gradient-accent"
               data-testid="stats-card"
             >
               <h2 className="text-2xl font-semibold mb-6 tracking-tight">Your Stats</h2>
@@ -234,7 +234,7 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3 }}
-            className="mt-6 p-8 rounded-xl border bg-card"
+            className="mt-6 glass-card p-8"
             data-testid="recent-activity-card"
           >
             <h2 className="text-2xl font-semibold mb-4 tracking-tight">Recent Activity</h2>
