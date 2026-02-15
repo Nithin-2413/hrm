@@ -152,11 +152,11 @@ const LandingPage = () => {
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Button
                   data-testid="hero-get-started-button"
-                  onClick={handleLogin}
+                  onClick={handleGetStarted}
                   size="lg"
                   className="bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 hover:from-indigo-700 hover:via-purple-700 hover:to-violet-700 text-white shadow-xl shadow-indigo-500/30 dark:shadow-indigo-500/20 rounded-full px-8 h-14 text-lg font-bold group transition-all"
                 >
-                  Start Free Trial
+                  Get Started
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 <Button
