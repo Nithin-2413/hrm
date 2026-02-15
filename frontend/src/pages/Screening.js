@@ -94,7 +94,7 @@ const Screening = () => {
     });
 
     try {
-      const response = await apiClient.post('/resumes/upload`, formData, {
+      const response = await apiClient.post('/resumes/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
