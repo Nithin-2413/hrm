@@ -2,11 +2,8 @@
 import axios from 'axios';
 import { getSessionId } from './session';
 
-// In production (Kubernetes/Emergent), use relative path /api
-// Ingress automatically routes /api/* to backend:8001
-// In local dev, use full URL with port
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
-export const API_BASE = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
+// Use relative path for API calls - Kubernetes ingress routes /api to backend
+const API_BASE = '/api';
 
 /**
  * Create an axios instance with session ID automatically included
