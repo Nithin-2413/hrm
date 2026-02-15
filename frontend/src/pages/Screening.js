@@ -126,14 +126,10 @@ const Screening = () => {
     setIsScreening(true);
 
     try {
-      const response = await axios.post(
-        `${API}/resumes/screen`,
-        {
+      const response = await apiClient.post('/resumes/screen', {
           job_id: selectedJob,
           resume_ids: uploadedResumes.map(r => r.resume_id)
-        },
-        
-      );
+        });
 
       setScreeningResults(response.data.results);
       toast.success(response.data.message);
