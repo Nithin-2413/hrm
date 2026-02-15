@@ -327,6 +327,18 @@ backend:
         agent: "testing"
         comment: "✅ BACKEND TESTING COMPLETE - AI screening endpoint working correctly. Tested: (1) Authentication Protection: Returns 401 when no session token provided. (2) Endpoint Structure: POST /api/resumes/screen exists and validates request structure (job_id + resume_ids). (3) AI Integration: Google Gemini 1.5 Flash properly configured - successful import of google.genai package, client initialization works. (4) API Key: Verified Google API key configured (AIzaSyBzCJqtm2G-Pwt46K8mIJPr7JDwpfOOcO8). (5) Migration Complete: Successfully migrated from deprecated google.generativeai to new google.genai package. Ready for authenticated AI screening requests."
 
+  - task: "Enhanced AI Resume Parsing"
+    implemented: true
+    working: "needs_testing"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "needs_testing"
+        agent: "main"
+        comment: "USER ISSUE FIX - Added parse_resume_with_ai() function using Gemini 1.5 Flash to extract structured data from resumes. Extracts: candidate name, email, phone, skills list, experience years, education, current role, key achievements. Updated Resume model with parsed fields. Modified upload_resumes endpoint to call AI parsing automatically. Returns candidate preview data (name, skills_count, experience_years) in upload response. Fallback to simple extraction if AI fails."
+
   - task: "Screening History APIs"
     implemented: true
     working: true
