@@ -108,14 +108,10 @@ const JobFormDialog = ({ open, onOpenChange, job, onSaved }) => {
       };
 
       if (job) {
-        await axios.put(`${API}/jobs/${job.job_id}`, payload, {
-          withCredentials: true
-        });
+        await apiClient.put(`/jobs/${job.job_id}`, payload);
         toast.success('Job updated successfully');
       } else {
-        await axios.post(`${API}/jobs`, payload, {
-          withCredentials: true
-        });
+        await apiClient.post('/jobs', payload);
         toast.success('Job created successfully');
       }
       
