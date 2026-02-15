@@ -139,7 +139,7 @@ const Dashboard = () => {
               data-testid="quick-actions-card"
             >
               <h2 className="text-2xl font-semibold mb-6 tracking-tight">Quick Actions</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Button
                   data-testid="action-create-jd-button"
                   variant="outline"
@@ -176,6 +176,30 @@ const Dashboard = () => {
                   <div>
                     <div className="font-semibold text-base mb-1">Screening History</div>
                     <div className="text-sm text-muted-foreground font-normal">Review past analyses</div>
+                  </div>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="h-auto py-6 flex-col items-start text-left hover:border-primary transition-colors"
+                  onClick={() => navigate('/calendar')}
+                >
+                  <CalendarIcon className="h-6 w-6 mb-2 text-primary" />
+                  <div>
+                    <div className="font-semibold text-base mb-1">Schedule Interview</div>
+                    <div className="text-sm text-muted-foreground font-normal">Manage your calendar</div>
+                  </div>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="h-auto py-6 flex-col items-start text-left hover:border-primary transition-colors"
+                  onClick={() => navigate('/emails')}
+                >
+                  <Mail className="h-6 w-6 mb-2 text-primary" />
+                  <div>
+                    <div className="font-semibold text-base mb-1">Generate Email</div>
+                    <div className="text-sm text-muted-foreground font-normal">AI-powered drafts</div>
                   </div>
                 </Button>
               </div>
