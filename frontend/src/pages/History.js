@@ -249,12 +249,6 @@ const History = () => {
     return variants[action] || variants.Maybe;
   };
 
-  const userInitials = user?.name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase() || 'U';
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
