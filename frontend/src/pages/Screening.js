@@ -150,12 +150,6 @@ const Screening = () => {
     }
   };
 
-  const userInitials = user?.name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase() || 'U';
-
   return (
     <div className="min-h-screen bg-background">
       <nav className="border-b glass-surface sticky top-0 z-20">
