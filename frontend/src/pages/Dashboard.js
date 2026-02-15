@@ -63,6 +63,7 @@ const Dashboard = () => {
                 <Button 
                   variant="ghost"
                   className="text-foreground font-medium"
+                  onClick={() => navigate('/dashboard')}
                 >
                   Dashboard
                 </Button>
@@ -73,40 +74,32 @@ const Dashboard = () => {
                 >
                   Jobs
                 </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/screening')}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Screening
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/history')}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  History
+                </Button>
               </div>
             </div>
             
             <div className="flex items-center gap-3">
               <ThemeToggle />
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full" data-testid="user-menu-trigger">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={user?.picture} alt={user?.name} />
-                      <AvatarFallback className="ai-gradient text-white">{userInitials}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none" data-testid="user-name">{user?.name}</p>
-                      <p className="text-xs leading-none text-muted-foreground" data-testid="user-email">{user?.email}</p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem data-testid="settings-menu-item">
-                    <SettingsIcon className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} data-testid="logout-menu-item">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/')}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Home className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         </div>
@@ -119,7 +112,7 @@ const Dashboard = () => {
           transition={{ duration: 0.4 }}
         >
           <div className="mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3">Welcome back, {user?.name?.split(' ')[0]}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3">Welcome to Recruit-AI</h1>
             <p className="text-lg text-muted-foreground">Let's find your next great hire</p>
           </div>
 
