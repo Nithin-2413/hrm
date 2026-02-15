@@ -1,17 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, LogOut, Plus, Edit, Trash2, Briefcase, MapPin, Clock, DollarSign } from 'lucide-react';
+import { Sparkles, Home, Plus, Edit, Trash2, Briefcase, MapPin, Clock, DollarSign } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,17 +14,13 @@ import {
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
 import { Badge } from '../components/ui/badge';
-import axios from 'axios';
+import apiClient from '../utils/api';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import JobFormDialog from '../components/JobFormDialog';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
 const Jobs = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showJobForm, setShowJobForm] = useState(false);
@@ -41,36 +28,18 @@ const Jobs = () => {
   const [deleteJobId, setDeleteJobId] = useState(null);
 
   useEffect(() => {
-    checkAuthAndLoadJobs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadJobs();
   }, []);
 
-  const checkAuthAndLoadJobs = async () => {
+  const loadJobs = async () => {
     try {
-      const userResponse = await axios.get(`${API}/auth/me`, {
-        withCredentials: true
-      });
-      setUser(userResponse.data);
-      
-      const jobsResponse = await axios.get(`${API}/jobs`, {
-        withCredentials: true
-      });
+      const jobsResponse = await apiClient.get('/jobs');
       setJobs(jobsResponse.data);
     } catch (error) {
-      console.error('Auth error:', error);
-      navigate('/login');
+      console.error('Failed to load jobs:', error);
+      toast.error('Failed to load jobs');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      navigate('/login');
     }
   };
 
