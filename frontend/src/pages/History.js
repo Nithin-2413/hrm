@@ -128,10 +128,9 @@ const History = () => {
 
   const updateStatus = async (screeningId, newStatus) => {
     try {
-      await axios.put(
-        `${API}/screenings/${screeningId}/status`,
-        { status: newStatus },
-        
+      await apiClient.put(
+        `/screenings/${screeningId}/status`,
+        { status: newStatus }
       );
       
       // Update local state
@@ -148,10 +147,9 @@ const History = () => {
 
   const bulkUpdateStatus = async (newStatus) => {
     try {
-      await axios.post(
-        `${API}/screenings/bulk-update-status`,
-        { screening_ids: selectedIds, status: newStatus },
-        
+      await apiClient.post(
+        `/screenings/bulk-update-status`,
+        { screening_ids: selectedIds, status: newStatus }
       );
       
       // Update local state
@@ -169,7 +167,8 @@ const History = () => {
 
   const exportCSV = async () => {
     try {
-      window.open(`${API}/screenings/export/csv?status=${statusFilter !== 'all' ? statusFilter : ''}`, '_blank');
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+      window.open(`${backendUrl}/screenings/export/csv?status=${statusFilter !== 'all' ? statusFilter : ''}`, '_blank');
       toast.success('Exporting screening results...');
     } catch (error) {
       console.error('Export error:', error);
