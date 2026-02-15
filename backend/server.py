@@ -103,6 +103,15 @@ class Resume(BaseModel):
     file_content: str  # base64 encoded
     file_type: str  # pdf or docx
     extracted_text: str
+    # Enhanced parsed data
+    parsed_name: Optional[str] = None
+    parsed_email: Optional[str] = None
+    parsed_phone: Optional[str] = None
+    parsed_skills: List[str] = []
+    parsed_experience_years: int = 0
+    parsed_education: Optional[str] = None
+    parsed_current_role: Optional[str] = None
+    parsed_achievements: List[str] = []
     created_at: datetime
 
 class StatusHistoryEntry(BaseModel):
