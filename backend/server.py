@@ -201,7 +201,7 @@ Rules:
 4. Return ONLY valid JSON, no markdown or extra text"""
 
         response = gemini_client.models.generate_content(
-            model='gemini-2.0-flash-exp',
+            model='gemini-2.0-flash',
             contents=prompt
         )
         response_text = response.text.strip()
@@ -288,7 +288,7 @@ Focus on:
 Be objective and data-driven in your analysis. Return ONLY valid JSON."""
 
         response = gemini_client.models.generate_content(
-            model='gemini-2.0-flash-exp',
+            model='gemini-2.0-flash',
             contents=prompt
         )
         response_text = response.text.strip()
@@ -1443,7 +1443,7 @@ Return in JSON format:
     
     try:
         response = gemini_client.models.generate_content(
-            model='gemini-2.0-flash-exp',
+            model='gemini-2.0-flash',
             contents=prompt
         )
         response_text = response.text.strip()
