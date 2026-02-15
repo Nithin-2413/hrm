@@ -38,6 +38,7 @@ class User(BaseModel):
     email: str
     name: str
     picture: Optional[str] = None
+    session_id: Optional[str] = None  # For session-based auth
     created_at: datetime
 
 class UserSession(BaseModel):
