@@ -295,32 +295,13 @@ const History = () => {
 
             <div className="flex items-center gap-4">
               <ThemeToggle />
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar>
-                      <AvatarImage src={user?.picture} alt={user?.name} />
-                      <AvatarFallback className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{user?.name}</p>
-                      <p className="text-xs text-muted-foreground">{user?.email}</p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/')}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Home className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         </div>
