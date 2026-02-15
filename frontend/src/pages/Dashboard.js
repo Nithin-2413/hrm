@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, FileText, Upload, History, Home } from 'lucide-react';
+import { Sparkles, FileText, Upload, History, Home, Calendar as CalendarIcon, Mail } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
 import apiClient from '../utils/api';
@@ -87,6 +87,20 @@ const Dashboard = () => {
                   className="text-muted-foreground hover:text-foreground"
                 >
                   History
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/calendar')}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Calendar
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/emails')}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Email Drafts
                 </Button>
               </div>
             </div>
