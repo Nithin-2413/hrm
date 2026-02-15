@@ -27,7 +27,6 @@ import { toast } from 'sonner';
 
 const History = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
   const [screenings, setScreenings] = useState([]);
   const [filteredScreenings, setFilteredScreenings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +49,7 @@ const History = () => {
   const [showComparison, setShowComparison] = useState(false);
 
   useEffect(() => {
-    checkAuthAndLoadScreenings();
+    loadScreenings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
