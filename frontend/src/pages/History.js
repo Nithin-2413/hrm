@@ -115,21 +115,9 @@ const History = () => {
     setFilteredScreenings(filtered);
   };
 
-  const handleLogout = async () => {
-    try {
-      await apiClient.post('/auth/logout`, {});
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      navigate('/login');
-    }
-  };
-
   const viewDetails = async (screeningId) => {
     try {
-      const response = await apiClient.get('/screenings/${screeningId}`, {
-        withCredentials: true
-      });
+      const response = await apiClient.get(`/screenings/${screeningId}`);
       setSelectedScreening(response.data);
       setShowDetails(true);
     } catch (error) {
