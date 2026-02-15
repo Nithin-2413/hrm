@@ -62,30 +62,15 @@ const History = () => {
     setShowBulkActions(selectedIds.length > 0);
   }, [selectedIds]);
 
-  const checkAuthAndLoadScreenings = async () => {
-    try {
-      const userResponse = await apiClient.get('/auth/me`, {
-        withCredentials: true
-      });
-      setUser(userResponse.data);
-      await loadScreenings();
-    } catch (error) {
-      console.error('Error:', error);
-      navigate('/login');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadScreenings = async () => {
     try {
-      const response = await apiClient.get('/screenings`, {
-        withCredentials: true
-      });
+      const response = await apiClient.get('/screenings');
       setScreenings(response.data);
     } catch (error) {
       console.error('Error loading screenings:', error);
       toast.error('Failed to load screening history');
+    } finally {
+      setLoading(false);
     }
   };
 
