@@ -161,6 +161,40 @@ agent_communication:
     - message: "Removed Google OAuth authentication and implemented session-based system. Each browser/device gets a unique session ID stored in localStorage. Backend automatically creates users based on session ID. Frontend updated to remove auth UI and use new apiClient. LandingPage now has 'Get Started' button that goes directly to dashboard. Still need to update Screening and History pages before testing."
     - agent: "main"
     - message: |
+        CRITICAL BUG FIXES - API CONNECTION ISSUES RESOLVED
+        
+        Issue Reported by User:
+        - Failed to create job descriptions
+        - Failed to upload resumes
+        - Bulk upload not working
+        - ATS scoring not working
+        
+        Root Cause Identified:
+        - Frontend was using localhost:8001 for API calls, which doesn't work in Kubernetes deployment
+        - Kubernetes ingress routes /api/* to backend:8001, but frontend wasn't using relative paths
+        
+        Fixes Applied:
+        1. Updated /app/frontend/src/utils/api.js to use relative path '/api' instead of localhost:8001
+        2. This allows Kubernetes ingress to properly route API requests to backend
+        3. Added enhanced resume parsing with Gemini AI
+        4. Updated Resume model to include parsed fields: name, email, phone, skills, experience, education, achievements
+        5. Modified upload_resumes endpoint to use parse_resume_with_ai() function
+        6. Enhanced screening to use parsed candidate data
+        
+        Backend Enhancements:
+        - Added parse_resume_with_ai() function using Gemini 1.5 Flash
+        - Extracts structured data: name, email, phone, skills, experience_years, education, current_role, achievements
+        - Fallback to simple extraction if AI parsing fails
+        - Resume upload now returns candidate_name, skills_count, experience_years for preview
+        
+        Services Status:
+        - Backend: RUNNING (restarted, no errors)
+        - Frontend: RUNNING (restarted with updated API client)
+        - MongoDB: RUNNING
+        
+        READY FOR TESTING: Job creation, resume upload, and AI screening should now work correctly.
+    - agent: "main"
+    - message: |
         AUTHENTICATION REMOVAL COMPLETE - ALL PAGES UPDATED
         
         Fixed Issues:
