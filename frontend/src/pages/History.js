@@ -1,20 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Sparkles, LogOut, Eye, Award, TrendingUp, TrendingDown, Minus, Filter, Search, 
+  Sparkles, Home, Eye, Award, TrendingUp, TrendingDown, Minus, Filter, Search, 
   Download, GitCompare, Trash2, CheckSquare, Square, X, FileDown, Users
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../components/ui/dropdown-menu';
 import { Badge } from '../components/ui/badge';
 import {
   Dialog,
