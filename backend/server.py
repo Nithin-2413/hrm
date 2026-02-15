@@ -774,8 +774,8 @@ async def screen_resumes(request: Request, screening_request: ScreeningRequest):
         # Screen resume with AI
         ai_result = await screen_resume_with_ai(resume['extracted_text'], job)
         
-        # Extract candidate name
-        candidate_name = extract_candidate_name(resume['extracted_text'])
+        # Use parsed name if available, otherwise extract from text
+        candidate_name = resume.get('parsed_name') or extract_candidate_name_simple(resume['extracted_text'])
         
         # Create screening result
         screening_id = f"screening_{uuid.uuid4().hex[:12]}"
