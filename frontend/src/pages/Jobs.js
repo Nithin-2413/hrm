@@ -68,7 +68,7 @@ const Jobs = () => {
   const handleJobSaved = async () => {
     setShowJobForm(false);
     setEditingJob(null);
-    await checkAuthAndLoadJobs();
+    await loadJobs();
   };
 
   const getStatusBadge = (status) => {
