@@ -161,8 +161,67 @@ def extract_text_from_docx(file_content: bytes) -> str:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to extract DOCX text: {str(e)}")
 
-# Helper function to extract candidate name from resume text
-def extract_candidate_name(resume_text: str) -> Optional[str]:
+# Enhanced resume parsing with Gemini AI
+async def parse_resume_with_ai(resume_text: str) -> dict:
+    """
+    Use Gemini AI to extract structured information from resume text
+    Returns: dict with name, email, phone, skills, experience, education
+    """
+    try:
+        prompt = f"""You are an expert resume parser. Extract the following information from this resume and return it in JSON format.
+
+RESUME TEXT:
+{resume_text}
+
+Extract and return in this exact JSON format:
+{{
+    "name": "<Full name of the candidate>",
+    "email": "<Email address if found, otherwise null>",
+    "phone": "<Phone number if found, otherwise null>",
+    "skills": ["<skill1>", "<skill2>", "<skill3>"],
+    "experience_years": <estimated total years of experience as a number>,
+    "education": "<Highest degree or most relevant education>",
+    "current_role": "<Most recent job title>",
+    "key_achievements": ["<achievement1>", "<achievement2>"]
+}}
+
+Rules:
+1. Extract exact information from the resume
+2. If information is not found, use null for strings and empty array for lists
+3. For skills, extract both technical and soft skills
+4. Return ONLY valid JSON, no markdown or extra text"""
+
+        response = gemini_client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt
+        )
+        response_text = response.text.strip()
+        
+        # Clean response
+        if response_text.startswith('```'):
+            response_text = re.sub(r'^```(?:json)?\n', '', response_text)
+            response_text = re.sub(r'\n```$', '', response_text)
+        
+        import json
+        parsed_data = json.loads(response_text)
+        return parsed_data
+        
+    except Exception as e:
+        logging.error(f"AI resume parsing error: {str(e)}")
+        # Return basic structure if parsing fails
+        return {
+            "name": extract_candidate_name_simple(resume_text),
+            "email": None,
+            "phone": None,
+            "skills": [],
+            "experience_years": 0,
+            "education": None,
+            "current_role": None,
+            "key_achievements": []
+        }
+
+# Helper function to extract candidate name from resume text (fallback)
+def extract_candidate_name_simple(resume_text: str) -> Optional[str]:
     # Simple heuristic: first line or first few words often contain the name
     lines = resume_text.strip().split('\n')
     if lines:
