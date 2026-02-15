@@ -844,7 +844,7 @@ agent_communication:
       
       🚨 CRITICAL DEPLOYMENT ISSUE DISCOVERED:
       External URL routing not working - all API endpoints return 404 on:
-      https://people-portal-7.preview.emergentagent.com/api/*
+      https://hrm-simplify.preview.emergentagent.com/api/*
       
       However, local backend works perfectly on localhost:8001
       This is a deployment/Kubernetes ingress routing issue, NOT a code issue.
