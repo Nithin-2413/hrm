@@ -201,7 +201,7 @@ Rules:
 4. Return ONLY valid JSON, no markdown or extra text"""
 
         response = gemini_client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-2.0-flash-exp',
             contents=prompt
         )
         response_text = response.text.strip()
