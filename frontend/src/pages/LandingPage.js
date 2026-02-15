@@ -394,15 +394,15 @@ const LandingPage = () => {
               </p>
               <Button
                 data-testid="cta-get-started-button"
-                onClick={handleLogin}
+                onClick={handleGetStarted}
                 size="lg"
                 className="bg-white text-indigo-600 hover:bg-slate-100 shadow-xl rounded-full px-10 h-16 text-lg font-bold group mt-4"
               >
-                Start Your Free Trial
+                Get Started Now
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <div className="text-indigo-100 text-sm pt-2">
-                No credit card required • 14-day free trial • Cancel anytime
+                No sign up required • Start immediately • Free to use
               </div>
             </div>
           </motion.div>
