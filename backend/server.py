@@ -1163,6 +1163,309 @@ async def list_resumes(request: Request):
     
     return resumes
 
+# Calendar Event Models
+class CalendarEvent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    event_id: str
+    user_id: str
+    title: str
+    description: Optional[str] = None
+    event_type: str = "interview"  # interview, meeting, reminder, other
+    start_datetime: datetime
+    end_datetime: datetime
+    location: Optional[str] = None
+    candidate_name: Optional[str] = None
+    candidate_email: Optional[str] = None
+    screening_id: Optional[str] = None
+    status: str = "scheduled"  # scheduled, completed, cancelled
+    color_tag: Optional[str] = "blue"  # blue, green, purple, orange, red
+    created_at: datetime
+    updated_at: datetime
+
+class CalendarEventCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    event_type: str = "interview"
+    start_datetime: datetime
+    end_datetime: datetime
+    location: Optional[str] = None
+    candidate_name: Optional[str] = None
+    candidate_email: Optional[str] = None
+    screening_id: Optional[str] = None
+    status: str = "scheduled"
+    color_tag: Optional[str] = "blue"
+
+class CalendarEventUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    event_type: Optional[str] = None
+    start_datetime: Optional[datetime] = None
+    end_datetime: Optional[datetime] = None
+    location: Optional[str] = None
+    candidate_name: Optional[str] = None
+    candidate_email: Optional[str] = None
+    screening_id: Optional[str] = None
+    status: Optional[str] = None
+    color_tag: Optional[str] = None
+
+# Calendar Endpoints
+@api_router.post("/calendar/events")
+async def create_calendar_event(event_data: CalendarEventCreate, request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    event_id = f"event_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    
+    event_doc = {
+        "event_id": event_id,
+        "user_id": user.user_id,
+        "title": event_data.title,
+        "description": event_data.description,
+        "event_type": event_data.event_type,
+        "start_datetime": event_data.start_datetime,
+        "end_datetime": event_data.end_datetime,
+        "location": event_data.location,
+        "candidate_name": event_data.candidate_name,
+        "candidate_email": event_data.candidate_email,
+        "screening_id": event_data.screening_id,
+        "status": event_data.status,
+        "color_tag": event_data.color_tag,
+        "created_at": now,
+        "updated_at": now
+    }
+    
+    await db.calendar_events.insert_one(event_doc)
+    
+    created_event = await db.calendar_events.find_one(
+        {"event_id": event_id},
+        {"_id": 0}
+    )
+    
+    return created_event
+
+@api_router.get("/calendar/events")
+async def list_calendar_events(
+    request: Request,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    event_type: Optional[str] = None,
+    status: Optional[str] = None
+):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    query = {"user_id": user.user_id}
+    
+    if event_type:
+        query["event_type"] = event_type
+    
+    if status:
+        query["status"] = status
+    
+    if start_date or end_date:
+        date_query = {}
+        if start_date:
+            date_query["$gte"] = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+        if end_date:
+            date_query["$lte"] = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        if date_query:
+            query["start_datetime"] = date_query
+    
+    events = await db.calendar_events.find(query, {"_id": 0}).sort("start_datetime", 1).to_list(length=None)
+    
+    return events
+
+@api_router.get("/calendar/events/{event_id}")
+async def get_calendar_event(event_id: str, request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    event = await db.calendar_events.find_one(
+        {"event_id": event_id, "user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    return event
+
+@api_router.put("/calendar/events/{event_id}")
+async def update_calendar_event(event_id: str, event_data: CalendarEventUpdate, request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    event = await db.calendar_events.find_one(
+        {"event_id": event_id, "user_id": user.user_id}
+    )
+    
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    update_data = {k: v for k, v in event_data.dict(exclude_unset=True).items() if v is not None}
+    
+    if update_data:
+        update_data["updated_at"] = datetime.now(timezone.utc)
+        await db.calendar_events.update_one(
+            {"event_id": event_id},
+            {"$set": update_data}
+        )
+    
+    updated_event = await db.calendar_events.find_one(
+        {"event_id": event_id},
+        {"_id": 0}
+    )
+    
+    return updated_event
+
+@api_router.delete("/calendar/events/{event_id}")
+async def delete_calendar_event(event_id: str, request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    result = await db.calendar_events.delete_one(
+        {"event_id": event_id, "user_id": user.user_id}
+    )
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    return {"message": "Event deleted successfully"}
+
+# Email Draft Generator Models
+class EmailDraftRequest(BaseModel):
+    email_type: str  # interview_invitation, reschedule, offer_letter, rejection, follow_up
+    candidate_name: str
+    job_title: Optional[str] = None
+    company_name: Optional[str] = "Our Company"
+    interview_date: Optional[str] = None
+    interview_time: Optional[str] = None
+    interview_location: Optional[str] = None
+    tone: str = "professional"  # professional, friendly, formal
+    additional_details: Optional[str] = None
+
+class EmailDraftResponse(BaseModel):
+    subject: str
+    body: str
+    email_type: str
+
+# Email Draft Generator Endpoint
+@api_router.post("/emails/generate-draft")
+async def generate_email_draft(draft_request: EmailDraftRequest, request: Request):
+    user = await get_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Create prompt based on email type
+    email_templates = {
+        "interview_invitation": f"""Generate a professional interview invitation email.
+
+Candidate Name: {draft_request.candidate_name}
+Job Title: {draft_request.job_title}
+Company: {draft_request.company_name}
+Interview Date: {draft_request.interview_date}
+Interview Time: {draft_request.interview_time}
+Location: {draft_request.interview_location}
+Tone: {draft_request.tone}
+Additional Details: {draft_request.additional_details or 'None'}
+
+Return in JSON format:
+{{
+    "subject": "<email subject line>",
+    "body": "<complete email body with proper formatting>"
+}}""",
+        "reschedule": f"""Generate a professional interview reschedule email.
+
+Candidate Name: {draft_request.candidate_name}
+Job Title: {draft_request.job_title}
+Company: {draft_request.company_name}
+New Interview Date: {draft_request.interview_date}
+New Interview Time: {draft_request.interview_time}
+Tone: {draft_request.tone}
+Additional Details: {draft_request.additional_details or 'None'}
+
+Return in JSON format:
+{{
+    "subject": "<email subject line>",
+    "body": "<complete email body with proper formatting>"
+}}""",
+        "offer_letter": f"""Generate a professional job offer letter email.
+
+Candidate Name: {draft_request.candidate_name}
+Job Title: {draft_request.job_title}
+Company: {draft_request.company_name}
+Tone: {draft_request.tone}
+Additional Details: {draft_request.additional_details or 'None'}
+
+Return in JSON format:
+{{
+    "subject": "<email subject line>",
+    "body": "<complete email body with proper formatting>"
+}}""",
+        "rejection": f"""Generate a professional and respectful job rejection email.
+
+Candidate Name: {draft_request.candidate_name}
+Job Title: {draft_request.job_title}
+Company: {draft_request.company_name}
+Tone: {draft_request.tone}
+Additional Details: {draft_request.additional_details or 'None'}
+
+Return in JSON format:
+{{
+    "subject": "<email subject line>",
+    "body": "<complete email body with proper formatting>"
+}}""",
+        "follow_up": f"""Generate a professional follow-up email after interview.
+
+Candidate Name: {draft_request.candidate_name}
+Job Title: {draft_request.job_title}
+Company: {draft_request.company_name}
+Tone: {draft_request.tone}
+Additional Details: {draft_request.additional_details or 'None'}
+
+Return in JSON format:
+{{
+    "subject": "<email subject line>",
+    "body": "<complete email body with proper formatting>"
+}}"""
+    }
+    
+    prompt = email_templates.get(draft_request.email_type)
+    
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Invalid email type")
+    
+    try:
+        response = gemini_client.models.generate_content(
+            model='gemini-2.0-flash-exp',
+            contents=prompt
+        )
+        response_text = response.text.strip()
+        
+        # Extract JSON from response
+        if response_text.startswith('```'):
+            response_text = re.sub(r'^```(?:json)?\n', '', response_text)
+            response_text = re.sub(r'\n```$', '', response_text)
+        
+        import json
+        email_data = json.loads(response_text)
+        
+        return {
+            "subject": email_data.get("subject", ""),
+            "body": email_data.get("body", ""),
+            "email_type": draft_request.email_type
+        }
+        
+    except Exception as e:
+        logging.error(f"Email generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate email: {str(e)}")
+
 app.include_router(api_router)
 
 app.add_middleware(
