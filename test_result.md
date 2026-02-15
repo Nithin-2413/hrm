@@ -528,22 +528,21 @@ frontend:
 
 metadata:
   created_by: "main_agent"
-  version: "1.0"
-  test_sequence: 1
+  version: "1.1"
+  test_sequence: 2
   run_ui: false
 
 test_plan:
   current_focus:
-    - "Resume Upload & Text Extraction"
-    - "AI Resume Screening with Gemini"
-    - "Screening History APIs"
+    - "API Connection Fix (Kubernetes Ingress)"
+    - "Enhanced AI Resume Parsing"
+    - "Job Description CRUD APIs"
     - "Resume Upload with Batch Support"
     - "AI Resume Screening Interface"
-    - "Screening History & Results Display"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
-  notes: "Testing Phase 3 features to verify functionality before starting Phase 4 extensions"
+  notes: "Critical bug fixes applied for user-reported issues: API connection failures fixed by using relative paths. Enhanced resume parsing with Gemini AI now extracts structured candidate data."
 
 agent_communication:
   - agent: "main"
