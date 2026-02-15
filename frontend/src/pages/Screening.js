@@ -147,13 +147,13 @@ const Screening = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b glass-surface sticky top-0 z-20">
+    <div className="min-h-screen bg-background gradient-mesh">
+      <nav className="glass-nav sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
-                <div className="w-8 h-8 rounded-lg ai-gradient flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl gradient-primary flex items-center justify-center shadow-lg">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-xl font-bold tracking-tight">Recruit-AI</span>
@@ -186,6 +186,20 @@ const Screening = () => {
                   className="text-muted-foreground hover:text-foreground"
                 >
                   History
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/calendar')}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Calendar
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/emails')}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Email Drafts
                 </Button>
               </div>
             </div>
