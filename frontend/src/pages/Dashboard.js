@@ -1,87 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Sparkles, LogOut, FileText, Upload, History, Settings as SettingsIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Sparkles, FileText, Upload, History, Home } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../components/ui/dropdown-menu';
-import axios from 'axios';
+import apiClient from '../utils/api';
 import { motion } from 'framer-motion';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [user, setUser] = useState(location.state?.user || null);
-  const [isAuthenticated, setIsAuthenticated] = useState(location.state?.user ? true : null);
   const [stats, setStats] = useState({
     activeJobs: 0,
     totalResumes: 0,
     totalScreenings: 0
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (location.state?.user) {
-      loadStats();
-      return;
-    }
-
-    const checkAuth = async () => {
-      try {
-        const response = await axios.get(`${API}/auth/me`, {
-          withCredentials: true
-        });
-        setUser(response.data);
-        setIsAuthenticated(true);
-        loadStats();
-      } catch (error) {
-        setIsAuthenticated(false);
-        navigate('/login');
-      }
-    };
-
-    checkAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state]);
+    loadStats();
+  }, []);
 
   const loadStats = async () => {
     try {
-      const jobsResponse = await axios.get(`${API}/jobs?status=active`, {
-        withCredentials: true
-      });
-      const screeningsResponse = await axios.get(`${API}/screenings`, {
-        withCredentials: true
-      });
-      setStats(prev => ({
-        ...prev,
+      const jobsResponse = await apiClient.get('/jobs?status=active');
+      const screeningsResponse = await apiClient.get('/screenings');
+      setStats({
         activeJobs: jobsResponse.data.length,
-        totalScreenings: screeningsResponse.data.length
-      }));
+        totalScreenings: screeningsResponse.data.length,
+        totalResumes: 0
+      });
     } catch (error) {
       console.error('Failed to load stats:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      navigate('/login');
-    }
-  };
-
-  if (isAuthenticated === null) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" data-testid="dashboard-loading">
         <div className="text-center">
@@ -91,12 +45,6 @@ const Dashboard = () => {
       </div>
     );
   }
-
-  const userInitials = user?.name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase() || 'U';
 
   return (
     <div className="min-h-screen bg-background" data-testid="dashboard-container">
