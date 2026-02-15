@@ -93,12 +93,6 @@ const Jobs = () => {
     );
   };
 
-  const userInitials = user?.name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase() || 'U';
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -136,6 +130,37 @@ const Jobs = () => {
                   className="text-foreground font-medium"
                 >
                   Jobs
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/screening')}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Screening
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/history')}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  History
+                </Button>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/')}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Home className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
                 </Button>
               </div>
             </div>
