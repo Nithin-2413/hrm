@@ -3,15 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles, Home, Upload, FileText, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
