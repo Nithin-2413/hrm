@@ -55,9 +55,7 @@ const Jobs = () => {
 
   const handleDeleteJob = async (jobId) => {
     try {
-      await axios.delete(`${API}/jobs/${jobId}`, {
-        withCredentials: true
-      });
+      await apiClient.delete(`/jobs/${jobId}`);
       setJobs(jobs.filter(job => job.job_id !== jobId));
       toast.success('Job deleted successfully');
       setDeleteJobId(null);
