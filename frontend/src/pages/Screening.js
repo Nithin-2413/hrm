@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 
 const Screening = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState([]);
