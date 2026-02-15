@@ -415,6 +415,18 @@ frontend:
         agent: "main"
         comment: "Phase 3 - Created Screening page with drag-and-drop resume upload, supporting PDF and DOCX files. Allows batch upload of multiple resumes. Files are validated for type and size (max 10MB). Integrated with backend /api/resumes/upload endpoint."
 
+  - task: "API Connection Fix (Kubernetes Ingress)"
+    implemented: true
+    working: "needs_testing"
+    file: "/app/frontend/src/utils/api.js"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: "needs_testing"
+        agent: "main"
+        comment: "USER ISSUE FIX - Fixed API connection failures (Failed to create job, Failed to upload resumes). Root cause: Frontend was using localhost:8001 which doesn't work in Kubernetes deployment. Updated api.js to use relative path '/api' instead. Kubernetes ingress automatically routes /api/* requests to backend:8001. This fixes all API call failures across the application (jobs, resumes, screening)."
+
   - task: "AI Resume Screening Interface"
     implemented: true
     working: "NA"
